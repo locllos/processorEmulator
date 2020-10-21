@@ -231,6 +231,8 @@ void Proccesor(CPU* cpu)
     free(cpu);
 }
 
+#undef DEF_CMD
+
 void Executing(const char* filename)
 {   
     CPU* cpu = (CPU*)calloc(1, sizeof(CPU));
