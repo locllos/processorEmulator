@@ -1,0 +1,6 @@
+disassembler.exe: disassembler.o stack.o
+	g++ disassembler.o stack.o -o disassembler
+disassembler.o: disassembler.cpp
+	g++ -c disassembler.cpp
+stack.o: stack.cpp
+	g++ -c stack.cpp

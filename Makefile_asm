@@ -1,0 +1,6 @@
+assembler.exe: assembler.o stack.o
+	g++ assembler.o stack.o -o assembler
+assembler.o: assembler.cpp
+	g++ -c assembler.cpp
+stack.o: stack.cpp
+	g++ -c stack.cpp

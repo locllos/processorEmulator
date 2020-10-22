@@ -1,0 +1,6 @@
+processor.exe: processor.o stack.o
+	g++ processor.o stack.o -o processor
+processor.o: processor.cpp
+	g++ -c processor.cpp
+stack.o: stack.cpp
+	g++ -c stack.cpp
