@@ -1,0 +1,39 @@
+IN
+POP rax
+IN
+POP rbx
+IN
+POP rcx
+PUSH rbx
+PUSH 2
+POW
+PUSH 4
+PUSH rax
+PUSH rcx
+MUL
+MUL
+SUB
+SQRT
+OUT
+POP rdx
+PUSH rbx
+PUSH -1
+MUL
+PUSH rdx
+ADD
+PUSH 2
+DIV
+PUSH rax
+DIV
+OUT
+PUSH rbx
+PUSH -1
+MUL
+PUSH rdx
+SUB
+PUSH 2
+DIV
+PUSH rax
+DIV
+OUT
+HLT
