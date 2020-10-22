@@ -3,21 +3,7 @@
 #include <math.h>
 #include <assert.h>
 #include <sys\stat.h> //Only for windows users :(
-
-const uint8_t LENGTH_IN_STRING = 2;
-const uint8_t LENGTH_OUT_STRING = 3;
-const uint8_t LENGTH_POP_STRING = 3;
-const uint8_t LENGTH_POW_STRING = 3;
-const uint8_t LENGTH_SUB_STRING = 3;
-const uint8_t LENGTH_ADD_STRING = 3;
-const uint8_t LENGTH_MUL_STRING = 3;
-const uint8_t LENGTH_SIN_STRING = 3;
-const uint8_t LENGTH_COS_STRING = 3;
-const uint8_t LENGTH_HLT_STRING = 3;
-const uint8_t LENGTH_PUSH_STRING = 4;
-const uint8_t LENGTH_SQRT_STRING = 4;
-const uint8_t LENGTH_REGISTER_NAME = 3;
-
+    
 const uint8_t AMOUNT_COMMANDS = 14;
 const uint8_t AMOUNT_REGISTERS = 4;
 
@@ -102,5 +88,13 @@ typedef struct Text
     uint64_t length;
     char* buffer;
 } Text;
+
+typedef struct BinaryCode
+{
+    uint8_t* code;
+    uint64_t offset;
+    uint64_t length;
+
+} BinaryCode;
 
 uint64_t approxLength(const char* filename);
