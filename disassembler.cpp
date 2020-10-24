@@ -9,7 +9,6 @@ uint64_t approxLength(const char* filename)
 	stat(filename, buff);
 
 	return buff->st_size;
-	
 }
 
 BinaryCode* openBinaryCode(const char* filename)
@@ -110,12 +109,34 @@ int main(int argC, const char* argV[])
     char* filename = (char*)calloc(32, sizeof(char));
     char* binary_filename = (char*)calloc(32, sizeof(char));
 
-    strcpy(filename, "your_code.txt");
-    strcpy(binary_filename, "bc.bin");
+    const char* default_filename = "your_code.txt";
+    const char* default_bin_filename = "bc.bin";
 
-    //когда-нибудь я сделаю, чтобы название можно было вводить через консоль
+    printf("ARG C: %d\n", argC);
+    for (int i = 0; i < argC; ++i)
+    {
+        printf("ARG V[%i] = %s\n", i, argV[i]);
+    }
 
-    binaryCodeProcessing(binary_filename, filename);
+    if (argC == 1)
+    {
+        binaryCodeProcessing(default_bin_filename, default_filename);
+    }
+    else if (argC == 2)
+    {   
+        binaryCodeProcessing(argV[1], default_filename);
+
+    }
+    else if (argC == 4 && strcmp(argV[2], "~") == 0)
+    {
+        binaryCodeProcessing(argV[1], argV[3]);
+    }
+    else
+    {
+        printf("UNKNOWN COMMANDS!\n");
+
+        return 1;
+    }
 
     return 0;
 }

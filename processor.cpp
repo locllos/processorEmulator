@@ -256,18 +256,23 @@ int main(int argC, const char* argV[])
     {
         printf("%s\n", argV[i]);
     }
-    printf("======\n");
+    printf("\n");
 
+    if (argC == 1)
+    {
+        Executing(filename);
+    }
     if (argC == 2)
     {
         strcpy(filename, argV[1]);
+        Executing(filename);
+        return 0;
+
     }
     else if (argC > 2)
     {
         printf("COMMAND NOT FOUND!\n");
-        return -1;
+        return 2;
     }
-    Executing(filename);
 
-    return 0;
 }
