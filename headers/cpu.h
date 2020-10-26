@@ -1,11 +1,15 @@
 #include "stack.h"
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <assert.h>
 #include <sys\stat.h> //Only for windows users :(
     
 const uint8_t AMOUNT_COMMANDS = 14;
 const uint8_t AMOUNT_REGISTERS = 4;
+const uint8_t BASE_CAPACITY = 10;
+const uint64_t NUM_ALGORITHM_PASS = 2;
+const elem_t DAM = -1;
 
 const char* COMMANDS[AMOUNT_COMMANDS] = 
 {   
@@ -61,9 +65,11 @@ typedef enum FLAG
 } COMMAND; */
 #include "enum.h"
 
+
 typedef struct CPU
 {
     Stack* stack;
+    Stack* call_stack;
 
     uint8_t* bcode;
     uint64_t length;
@@ -94,7 +100,39 @@ typedef struct BinaryCode
     uint8_t* code;
     uint64_t offset;
     uint64_t length;
+    uint64_t capacity;
 
 } BinaryCode;
+
+typedef struct Label
+{
+    char* label_name;
+    elem_t mark;
+    uint64_t offset;
+} Label;
+
+typedef struct Labels
+{
+    Label* lb;
+    uint64_t size;
+    uint64_t capacity;
+} Labels;
+
+typedef struct CurLine
+{
+    char* string;
+    char* cmd;
+    char* reg;
+
+    elem_t value;
+    uint8_t reg_index;
+    uint64_t pos;
+    int tmp_pos;
+    uint64_t line;
+
+    FLAG flag;
+    Label* cur_label;
+
+} CurLine;
 
 uint64_t approxLength(const char* filename);

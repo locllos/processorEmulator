@@ -129,10 +129,7 @@ void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, const char* filenam
         
         fprintf(file, "^");
     }  
-    fprintf(file, "\n");
-    fprintf(file, "pc = %llu", pc);
-    fprintf(file, "\n");
-
+    fprintf(file, "\npc = %llu\n", pc);
     fclose(file);
     
 }
@@ -155,6 +152,7 @@ void cpuDamp(CPU* cpu)
     bcodeDamp(cpu->bcode, cpu->pc, cpu->length, "logs.txt");
     registerDamp(cpu->registers, "logs.txt");
     stackDump_simple(cpu->stack, stackOk_simple(cpu->stack), __LINE__);
+    stackDump_simple(cpu->call_stack, stackOk_simple(cpu->call_stack), __LINE__);
 }
 
 void loadBytecode(CPU* cpu, const char* filename)
@@ -189,20 +187,22 @@ void loadRegisters(CPU* cpu)
     cpu->registers[3] = 0;
 }
 
-void loadStack(CPU* cpu)
+void loadStacks(CPU* cpu)
 {   
     cpu->stack = (Stack*)calloc(1, sizeof(Stack));
+    cpu->call_stack = (Stack*)calloc(1, sizeof(Stack));
 
     constructStack(cpu->stack, 1);
+    constructStack(cpu->call_stack, 1);
 }
 
-#define DEF_CMD(name, num, arg)         \
-    case name##_COMMAND:                \
-        name##_FUNC                     \
+#define DEF_CMD(name, num, arg, ctrl_flow)  \
+    case name##_COMMAND:                    \
+        name##_FUNC                         \
         break;   
 
 void Proccesor(CPU* cpu)
-{ 
+{
     cpuDamp(cpu);
     while (cpu->bcode[cpu->pc] != HLT_COMMAND && cpu->pc < cpu->length && cpu->bcode[cpu->pc] != EOF)
     {    
@@ -239,7 +239,7 @@ void Executing(const char* filename)
 
     loadBytecode(cpu, filename);
 
-    loadStack(cpu);
+    loadStacks(cpu);
 
     loadRegisters(cpu);
 

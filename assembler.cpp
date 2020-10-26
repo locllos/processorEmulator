@@ -1,59 +1,94 @@
 #include "headers/cpu.h"
 
-#define DEF_CMD(name, num, arg)                                                         \
-        if (strcmp(cmd, #name) == 0)                                                    \
+#define DEF_CMD(name, num, arg, ctrl_flow)                                              \
+        if (strcmp(cur_line->cmd, #name) == 0)                                          \
         {                                                                               \
             cmd_num = num;                                                              \
-            fwrite(&cmd_num, sizeof(uint8_t), 1, binary_file);                          \
-            /*printf("FIND COMMAND: %s\n", cmd);*/                                      \
+            pushFromOffset(bcode, &cmd_num, sizeof(uint8_t));                           \
             printf("SET COMMAND: %d\n", num);                                           \
             if (arg == 1)                                                               \
             {                                                                           \
-                if (sscanf(cur_string + pos, "%lg%n", &value, &tmp_pos) == 1)           \
+                if (oneArgumentProcessing(cur_line, bcode, labels, ctrl_flow, algorithm_pass) != 0)\
                 {                                                                       \
-                    flag = NUMBER;                                                      \
-                    printf("FIND NUMBER.\nSET FLAG: %d\n", flag);                       \
-                    fwrite(&flag, sizeof(uint8_t), 1, binary_file);                     \
-                    printf("VALUE OF NUMBER: %lg\n", value);                            \
-                    fwrite(&value, sizeof(elem_t), 1, binary_file);                     \
-                                                                                        \
+                    return 1;                                                           \
                 }                                                                       \
-                else if (sscanf(cur_string + pos, "%s%n", reg, &tmp_pos) == 1)          \
-                {                                                                       \
-                    reg_index = indexStringInArray(reg, REGISTERS, AMOUNT_REGISTERS);   \
-                    if (reg_index > -1 && reg_index < AMOUNT_REGISTERS)                 \
-                    {                                                                   \
-                        flag = REGISTER;                                                \
-                        printf("FIND REGISTER.\nSET FLAG: %d\nREGISTER ADDRESS: %s\n", flag, reg);\
-                        fwrite(&flag, sizeof(uint8_t), 1, binary_file);                 \
-                        fwrite(&reg_index, sizeof(int8_t), 1, binary_file);             \
-                    }                                                                   \
-                    else                                                                \
-                    {                                                                   \
-                        printf("ERROR! WRONG REGISTER NAME AT LINE %llu!\n", i + 1);    \
-                        printf("->%s\n", reg);                                          \
-                        return 1;                                                       \
-                    }                                                                   \
-                }                                                                       \
-                else                                                                    \
-                {                                                                       \
-                    printf("ARGUMENT DOESNT FIND AT LINE %llu!", i + 1);                \
-                    return 3;                                                           \
-                }                                                                       \
-                pos += tmp_pos;                                                         \
+                cur_line->pos += cur_line->tmp_pos;                                     \
             }                                                                           \
         }                                                                               \
-        else    
+        else if (isLabelNext(cur_line))                                                 \
+        {                                                                               \
+            if (algorithm_pass == 0)                                                    \
+            {                                                                           \
+                writeLabel(cur_line, bcode, labels);                                    \
+            }                                                                           \
+        }                                                                               \
+        else
+    
+void Copy(void* value_to, const void* value_from, const int elem_size) 
+{
+    for (size_t i = 0; i < elem_size; ++i) 
+    {
+        *((uint8_t*)value_to + i) = *((uint8_t*)value_from + i);
+    }
+}
+
+Labels* newLabels()
+{
+    Labels* labels = (Labels*)calloc(1, sizeof(Labels));
+    labels->capacity = 10;
+    labels->size = 0;
+    labels->lb = (Label*)calloc(10, sizeof(Label));
+
+    return labels;
+}
+
+void addLabel(Labels* labels, const char* label_name, const elem_t mark)
+{
+    if (labels->size + 1 > labels->capacity)
+    {
+        labels->capacity *= 2;
+
+        labels->lb = (Label*)realloc(labels->lb, sizeof(Label) * labels->capacity);
+    }
+    labels->lb[labels->size].label_name = (char*)calloc(strlen(label_name) + 1, sizeof(char));
+    strcpy(labels->lb[labels->size].label_name, label_name);
+    labels->lb[labels->size].mark = mark;
+
+    ++labels->size;
+}
+
+void destructLabels(Labels* labels)
+{
+    for (size_t i = 0; i < labels->size; ++i)
+    {
+        free(labels->lb[i].label_name);
+    }
+    free(labels->lb);
+    free(labels);
+}
+
+Label* findLabel(Labels* labels, const char* label_name)
+{
+
+    for (size_t i = 0; i < labels->size; ++i)
+    {   
+        if (strcmp(labels->lb[i].label_name, label_name) == 0)
+        {   
+            return labels->lb + i;
+        }
+    }
+    return NULL;
+}
 
 uint64_t approxLength(const char* filename)
 {
 	assert(filename);
 	
-	struct stat* buff = (struct stat*)calloc(1, sizeof(struct stat));
+//	struct stat* buff = (struct stat*)calloc(1, sizeof(stat));
 
-	stat(filename, buff);
+//	stat(filename, buff);
 
-	return buff->st_size;
+	return 2048;
 	
 }
 
@@ -169,17 +204,310 @@ Text* parseContents(const char* filename)
 void destructText(Text* text)
 {
 
-    for (size_t i = 0; i < text->number_of_lines; ++i)
-    {
-        free(text->lines[i].string);
-    }
-
     free(text->lines);
 
     if (text->buffer != NULL)
     {
         free(text->buffer);
     }
+}
+
+BinaryCode* newBinaryCode(const size_t start_capacity)
+{
+    BinaryCode* bcode = (BinaryCode*)calloc(1, sizeof(BinaryCode));
+    bcode->code = (uint8_t*)calloc(start_capacity, sizeof(uint8_t));
+    bcode->capacity = start_capacity;   
+    bcode->length = 0;
+    bcode->offset = 0;
+
+    return bcode;
+}
+
+void capacityProcessing(BinaryCode* bcode, const size_t elem_size)
+{
+    while (bcode->length + elem_size > bcode->capacity)
+    {
+        bcode->capacity = bcode->capacity * 2;
+    }
+
+    //printf("BCODE->CAPACITY: %llu\n", bcode->capacity);
+    uint8_t* newRegion = (uint8_t*)realloc(bcode->code, sizeof(uint8_t) * bcode->capacity);
+    if (newRegion == NULL) {
+        printf("Failed realocating for %zu\n", sizeof(uint8_t) * bcode->capacity);
+        assert(newRegion != NULL);
+    }
+    bcode->code = newRegion;
+    //printf("BCODE = %p\n", bcode->code);
+
+}
+
+void pushFromOffset(BinaryCode* bcode, const void* elem, size_t elem_size)
+{   
+    capacityProcessing(bcode, elem_size);
+    if (bcode->offset > bcode->length)
+    {
+        printf("OFFSET GREATER THAN LENGTH!\n");
+        assert(bcode->offset <= bcode->length);
+    }
+    
+    if (bcode->offset + elem_size <= bcode->length)
+    {   
+        Copy(bcode->code + bcode->offset, elem, elem_size);
+    }
+    else
+    {    
+        Copy(bcode->code + bcode->offset, elem, elem_size);
+
+        bcode->length += elem_size - (bcode->length - bcode->offset);
+    }
+    bcode->offset += elem_size;
+    
+    /*
+    printf("============\n");
+    printf("OFFSET: %llu\n", bcode->offset);
+    printf("CAPACITY: %llu\n", bcode->capacity);
+    printf("LENGTH: %llu\n", bcode->length);
+    printf("ELEM_SIZE: %llu\n", elem_size);
+    printf("ELEM VALUE: %lg\n", *(elem_t*)elem);
+    printf("BCODE->CODE = %p\n", bcode->code);
+
+    for (size_t i = 0; i < bcode->length; ++i)
+    {
+        printf("%02X ", bcode->code[i]);
+    }
+    printf("\n\n");
+    */
+    
+}
+
+int ctrlFlowProcess(BinaryCode* bcode, Labels* labels, CurLine* cur_line, uint64_t alg_pass)
+{
+    cur_line->flag = NUMBER;  
+
+    printf("FIND CTRL_FLOW.\nSET FLAG: %d\n", cur_line->flag); 
+
+    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));   
+    if (alg_pass == 1)                                            
+    {    
+        if (sscanf(cur_line->string + cur_line->pos, "%s", cur_line->cmd) == 1)                   
+        {                                                               
+            printf("TRY TO FIND: %s|\n", cur_line->cmd);                          
+            cur_line->cur_label = findLabel(labels, cur_line->cmd);                         
+            if (cur_line->cur_label != NULL)                                      
+            {                                                           
+                printf("FIND LABEL: %s\n", cur_line->cur_label->label_name);      
+                printf("SET LABEL NUM: %lg\n", cur_line->cur_label->mark);    
+
+                pushFromOffset(bcode, &cur_line->cur_label->mark, sizeof(elem_t));
+            }                                                           
+            else                                                        
+            {                                                           
+                printf("CANNOT FIND LABEL NAME AT LINE %llu:\n->%s\n", cur_line->line, cur_line->cmd);
+                return 1;                                               
+            }                                                           
+        }                                                               
+        else                                                            
+        {                                                               
+            printf("CANNOT READ LABEL NAME AT LINE %llu:\n->%s\n", cur_line->line, cur_line->cmd);
+            return 1;                                                   
+        }                                                                                                                         
+    }                                                                   
+    else                                                                
+    {
+        pushFromOffset(bcode, &DAM, sizeof(elem_t));                    
+    }          
+
+    return 0;                                               
+}
+
+int isNumberNext(CurLine* cur_line)
+{
+    int tmp_pos = 0;
+    if (sscanf(cur_line->string + cur_line->pos, "%lg%n", &cur_line->value, &tmp_pos) == 1)
+    {
+        cur_line->tmp_pos = tmp_pos;
+
+        return 1;
+    }
+
+    return 0;
+}
+
+int isStringNext(CurLine* cur_line)
+{
+    int tmp_pos = 0;
+    if (sscanf(cur_line->string + cur_line->pos, "%s%n", cur_line->reg, &tmp_pos) == 1)
+    {
+        cur_line->tmp_pos += tmp_pos;
+        
+        return 1;
+    }
+
+    return 0;
+}
+
+int isRegisterNext(CurLine* cur_line)
+{
+    cur_line->reg_index = indexStringInArray(cur_line->reg, REGISTERS, AMOUNT_REGISTERS);
+
+    return (cur_line->reg_index > -1 && cur_line->reg_index < AMOUNT_REGISTERS);
+}
+
+int isLabelNext(CurLine* cur_line)
+{
+    return (cur_line->cmd[strlen(cur_line->cmd) - 1] == ':');
+}
+
+void writeNumber(CurLine* cur_line, BinaryCode* bcode)
+{   
+    sscanf(cur_line->string + cur_line->pos, "%lg%n", &cur_line->value, &cur_line->tmp_pos);
+    cur_line->flag = NUMBER;                                                      
+    printf("FIND NUMBER.\nSET FLAG: %d\n", cur_line->flag);                       
+    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));                     
+    printf("VALUE OF NUMBER: %lg\n", cur_line->value);                     
+    pushFromOffset(bcode, &cur_line->value, sizeof(elem_t));  
+}
+
+void writeRegister(CurLine* cur_line, BinaryCode* bcode)
+{
+    cur_line->flag = REGISTER;                                                
+    printf("FIND REGISTER.\nSET FLAG: %d\nREGISTER ADDRESS: %s\n", cur_line->flag, cur_line->reg);
+    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));          
+    pushFromOffset(bcode, &cur_line->reg_index, sizeof(int8_t));     
+}
+
+void writeLabel(CurLine* cur_line, BinaryCode* bcode, Labels* labels)
+{
+    cur_line->cmd[strlen(cur_line->cmd) - 1]  = '\0';                                           
+    printf("FIND LABEL: %s\n", cur_line->cmd);      
+    addLabel(labels, cur_line->cmd, bcode->offset);                                   
+}
+
+int registerError(CurLine* cur_line)
+{
+    printf("ERROR! WRONG REGISTER NAME AT LINE %llu!\n", cur_line->line);
+
+    printf("->%s\n", cur_line->reg);
+
+    return 4;
+}
+
+int argumentError(CurLine* cur_line)
+{
+    printf("ARGUMENT DOESNT FIND AT LINE %llu!\n", cur_line->line); 
+
+    return 3;
+}
+
+int isCtrlFlow(const uint8_t ctrl_flow)
+{
+    return (ctrl_flow == 1);
+}
+
+void destructBinaryCode(BinaryCode* bcode)
+{
+    free(bcode->code);
+    free(bcode);
+}
+
+void writeToBinary(BinaryCode* bcode, const char* filename)
+{
+    FILE* binary_file = fopen(filename, "wb");
+
+    fwrite(bcode->code, sizeof(uint8_t), bcode->length, binary_file);
+
+    fclose(binary_file);
+}
+
+int oneArgumentProcessing(CurLine* cur_line, BinaryCode* bcode, Labels* labels, const uint8_t ctrl_flow, const uint8_t alg_pass)
+{
+    if (isCtrlFlow(ctrl_flow))                                          
+    {                                                                       
+        if (ctrlFlowProcess(bcode, labels, cur_line, alg_pass) != 0)  
+        {            
+            return 4;                                                       
+        }            
+        return 0;                                                           
+    }                                                                       
+    if (isNumberNext(cur_line))                                             
+    {                                                                       
+        writeNumber(cur_line, bcode);                                       
+    }                                                                       
+    else if (isStringNext(cur_line))                                        
+    {                                                                       
+        if (isRegisterNext(cur_line))                                       
+        {                                                                  
+            writeRegister(cur_line, bcode);                            
+        }                                                                   
+        else                                                                
+        {                                                                   
+            return registerError(cur_line);                                 
+        }                                                                   
+    }                                                                       
+    else                                                                    
+    {                                                                       
+        return argumentError(cur_line);                                     
+    }
+    return 0;
+}
+
+CurLine* newCurLine()
+{
+    CurLine* cur_line = (CurLine*)calloc(1, sizeof(CurLine)); 
+
+    cur_line->cmd = (char*)calloc(32, sizeof(char));
+    cur_line->reg = (char*)calloc(8, sizeof(char));
+    cur_line->tmp_pos = -1;
+    cur_line->pos = 0;
+    cur_line->value = 0;
+    cur_line->line = 0;
+    cur_line->flag = NUMBER;
+    cur_line->reg_index = 0;
+    cur_line->cur_label = NULL;
+
+    return cur_line;
+}
+
+void commentsProcessing(CurLine* cur_line)
+{
+    char* def_end = strchr(cur_line->string, ';');                                              
+    if (def_end != NULL)                                                            
+    {    
+        if (cur_line->string == def_end)
+        {
+            return;
+        }                                                                     
+        *def_end = '\0';    
+    }
+}
+
+int endingsProcess(CurLine* cur_line)
+{
+    char check_ending = '\0';
+
+    if (sscanf(cur_line->string + cur_line->pos, "[^ \n\t]%c", &check_ending) > 0 && check_ending != '\0')
+    {
+        sscanf(cur_line->string + cur_line->pos, "%s", cur_line->cmd);
+        printf("UNKNOWN COMMAND AT LINE %llu!\n", cur_line->line);
+        printf("->%s", cur_line->cmd);
+        return 1;
+    }
+
+
+    return 0;
+}
+
+void resetCurLine(CurLine* cur_line)
+{
+    strcpy(cur_line->cmd, "upd_сmd");
+    strcpy(cur_line->reg, "upd_reg");
+    cur_line->tmp_pos = 0;
+    cur_line->pos = 0;
+    cur_line->value = 0;
+    cur_line->line = 0;
+    cur_line->flag = NUMBER;
+    cur_line->reg_index = 0;
+    cur_line->cur_label = NULL;
 }
 
 int codeProcessing(const char* filename, const char* binary_filename)
@@ -193,77 +521,58 @@ int codeProcessing(const char* filename, const char* binary_filename)
         return 3;
     }
 
-    FILE* binary_file = fopen(binary_filename, "wb");
-
+    BinaryCode* bcode = newBinaryCode(BASE_CAPACITY);
+    Labels* labels = newLabels();
     uint64_t amount_lines = code->number_of_lines;
-
-    elem_t value = 0;
     uint64_t cmd_num = 0;
-    char* cur_string = NULL;
-    char* cmd = (char*)calloc(16, sizeof(char));
-    uint64_t pos = 0;
-    int64_t tmp_pos = -1;
-    char* reg = (char*)calloc(16, sizeof(char));
-    int8_t reg_index = -1;
-    FLAG flag = NUMBER;
-    char* def_end = NULL;
-    char* check_ending = (char*)calloc(1, sizeof(char));
-    for (uint64_t i = 0; i < amount_lines; ++i)
+
+    CurLine* cur_line = newCurLine();
+
+    printf("{AMOUNT OF LINES: %llu}\n", amount_lines);
+
+    for (uint64_t algorithm_pass = 0; algorithm_pass < NUM_ALGORITHM_PASS; ++algorithm_pass)
     {
-        value = 0;
-        cmd_num = 0;
-        pos = 0;
-        tmp_pos = -1;
-        flag = NUMBER;
-        reg_index = -1;
-        def_end = NULL;
-        cur_string = code->lines[i].string;
-        *check_ending = '\0';
+        bcode->offset = 0;
+        printf("\n======\nALGORITHM PASS #%llu\n=======\n", algorithm_pass + 1);
+        for (uint64_t i = 0; i < amount_lines; ++i)
+        {   
+            
+            resetCurLine(cur_line);
+            cur_line->string = code->lines[i].string;
+            cur_line->line = i + 1;
 
+            //"Delete" comments 
+            commentsProcessing(cur_line);
 
-        //Delete comments
-        def_end = strchr(cur_string, ';');                                               
-        if (def_end != NULL)                                                            
-        {    
-            if (cur_string == def_end)
+            int tmp_pos = 0;
+            sscanf(cur_line->string, "%s%n", cur_line->cmd, &tmp_pos);
+            cur_line->tmp_pos = tmp_pos;
+            
+            cur_line->pos += cur_line->tmp_pos;
+
+            #include "commands.h"
+            /*else*/
+            if (strcmp(cur_line->cmd, "upd_сmd") == 0)
             {
                 continue;
-            }                                                                     
-            *def_end = '\0';    
+            }
+            else
+            {
+                printf("UNKNOWN COMMAND AT LINE %llu!\n", cur_line->line);
+                printf("LINE: %s|\n", cur_line->string);
+                printf("->%s|\n", cur_line->cmd);
+                return 2;
+            }
+
+            if (endingsProcess(cur_line) != 0)
+            {
+                return 2;
+            }
 
         }
-
-        strcpy(cmd, "upd cmd");                                                            
-        sscanf(cur_string, "%s%n", cmd, &tmp_pos);   
-        pos += tmp_pos;
-
-        #include "commands.h"
-        /*else*/
-        if (strcmp(cmd, "upd cmd") == 0)
-        {
-            continue;
-        }
-        else
-        {
-            printf("UNKNOWN COMMAND AT LINE %llu!\n", i + 1);
-            printf("->%s\n", cmd);
-            return 2;
-        }
-
-        sscanf(cur_string + pos, "%s", &check_ending);
-        if (*check_ending != '\0')
-        {
-            sscanf(cur_string + pos, "%s", cmd);
-            printf("UNKNOWN COMMAND AT LINE %llu!\n", i + 1);
-            printf("->%s", cmd);
-            return 2;
-        }
-
     }
-    fclose(binary_file);
 
-    #undef DEF_CMD
-
+    writeToBinary(bcode, binary_filename);
     destructText(code);
 
     return 0;

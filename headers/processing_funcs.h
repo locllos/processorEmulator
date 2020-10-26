@@ -1,155 +1,439 @@
+ #include "fast_func.h"
+ 
  #define IN_FUNC                                        \
     {                                                   \
-    scanf("%lg", &value);                               \
+    SCAN_VALUE;                        \
                                                         \
-    pushStack_simple(cpu->stack, value);                \
+    PUSH(value);                \
                                                         \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
     }
 
 #define OUT_FUNC                                        \
 {                                                       \
-    printf("%lg\n", topStack_simple(cpu->stack));       \
+    PRINT_TOP;       \
                                                         \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
 }
 
 #define PUSH_FUNC                                       \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
     if (cpu->bcode[cpu->pc] == NUMBER)                  \
     {                                                   \
-        cpu->pc += sizeof(uint8_t);                     \
+        PC_INCR_1;                     \
                                                         \
-        value = *((elem_t*)(cpu->bcode + cpu->pc));     \
+        TAKE_VALUE_FROM_FLOW;     \
                                                         \
-        cpu->pc += sizeof(elem_t);                      \
+        PC_INCR_8;                      \
     }                                                   \
     else if (cpu->bcode[cpu->pc] == REGISTER)           \
     {                                                   \
-        cpu->pc += sizeof(uint8_t);                     \
+        PC_INCR_1;                     \
                                                         \
-        value = cpu->registers[cpu->bcode[cpu->pc]];    \
+        TAKE_VALUE_FROM_REGS;    \
                                                         \
-        cpu->pc += sizeof(uint8_t);                     \
+        PC_INCR_1;                     \
     }                                                   \
                                                         \
-    pushStack_simple(cpu->stack, value);                \
+    PUSH;                \
 }
 
 #define POP_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
     if (cpu->bcode[cpu->pc] == NUMBER)                  \
     {                                                   \
-        eraseStack_simple(cpu->stack);                  \
+        ERASE;                  \
     }                                                   \
     else if (cpu->bcode[cpu->pc] == REGISTER)           \
     {                                                   \
-        cpu->pc += sizeof(uint8_t);                     \
+        PC_INCR_1;                     \
                                                         \
-        cpu->registers[cpu->bcode[cpu->pc]] = popStack_simple(cpu->stack);\
+        POP_TO_REGS;\
     }                                                   \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
 }
 
 #define ADD_FUNC                                        \
 {                                                       \
-    valua_a = popStack_simple(cpu->stack);              \
-    value_b = popStack_simple(cpu->stack);              \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
                                                         \
-    result = valua_a + value_b;                         \
+    ADD_VALUES;                         \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
                                                         \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
 }   
 
 #define SUB_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    valua_a = popStack_simple(cpu->stack);              \
-    value_b = popStack_simple(cpu->stack);              \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
                                                         \
-    result = value_b - valua_a;                         \
+    SUB_VALUES;                         \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 }
 
 #define MUL_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    valua_a = popStack_simple(cpu->stack);              \
-    value_b = popStack_simple(cpu->stack);              \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
                                                         \
-    result = valua_a * value_b;                         \
+    MUL_VALUES;                         \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 }
 
 #define DIV_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    valua_a = popStack_simple(cpu->stack);              \
-    value_b = popStack_simple(cpu->stack);              \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
                                                         \
-    result = value_b / valua_a;                         \
+    DIV_VALUES;                         \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 }
 
 #define POW_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    valua_a = popStack_simple(cpu->stack);              \
-    value_b = popStack_simple(cpu->stack);              \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
                                                         \
-    result = pow(value_b, valua_a);                     \
+    POW_VALUES;                     \
                                                         \
-    pushStack_simple(cpu->stack,result);                \
+    PUSH_RESULT;                \
 }
 
 #define SQRT_FUNC                                       \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    value = popStack_simple(cpu->stack);                \
+    POP_TO_VALUE(value) ;                \
                                                         \
-    result = sqrt(value);                               \
+    SQRT_VALUE;                               \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 } 
 
 #define SIN_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    value = popStack_simple(cpu->stack);                \
+    POP_TO_VALUE(value) ;                \
                                                         \
-    result = sin(value);                                \
+    SIN_VALUE;                                \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 } 
 
 #define COS_FUNC                                        \
 {                                                       \
-    cpu->pc += sizeof(uint8_t);                         \
+    PC_INCR_1;                         \
                                                         \
-    value = popStack_simple(cpu->stack);                \
+    POP_TO_VALUE(value) ;                \
                                                         \
-    result = cos(value);                                \
+    COS_VALUE;                                \
                                                         \
-    pushStack_simple(cpu->stack, result);               \
+    PUSH_RESULT;               \
 }
 
 #define HLT_FUNC                                        \
 {                                                       \
-    printf("END OF PROGRAMM.\n");                       \
+    PRINT_END;                       \
+}
+
+#define JMP_FUNC                                        \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        TAKE_ADDRESS_FROM_FLOW;\
+                                                        \
+    }                                                   \
+    else if(cpu->bcode[cpu->pc] == REGISTER)            \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        TAKE_ADDRESS_FROM_REGS;\
+    }                                                   \
+}                                                       
+
+#define JB_FUNC                                         \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a > value_b)                          \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a > value_b)                          \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                 \
+        }                                               \
+    }                                                   \
+}                                                       
+
+#define JBE_FUNC                                        \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a >= value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a >= value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                 \
+        }                                               \
+    }                                                   \
+}                                                       
+
+#define JE_FUNC                                         \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a == value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a == value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                 \
+        }                                               \
+    }                                                   \
+}                   
+
+#define JNE_FUNC                                        \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a != value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] != REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a == value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                 \
+        }                                               \
+    }                                                   \
+}  
+
+#define JA_FUNC                                         \
+{                                                       \
+    PC_INCR_1;                         \
+                                                        \
+    POP_TO_VALUE(value_a);              \
+    POP_TO_VALUE(value_b);              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                     \
+                                                        \
+        if (value_a < value_b)                          \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;\
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                                      \
+                                                        \
+        if (value_a < value_b)                          \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;                     \
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                                  \
+        }                                               \
+    }                                                   \
+}
+
+#define JAE_FUNC                                        \
+{                                                       \
+    PC_INCR_1;                                          \
+                                                        \
+    POP_TO_VALUE(value_a);                              \
+    POP_TO_VALUE(value_b);                              \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                                      \
+                                                        \
+        if (value_a <= value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;                     \
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                                      \
+                                                        \
+        if (value_a <= value_b)                         \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;                     \
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                                  \
+        }                                               \
+    }                                                   \
+}
+
+#define JT_FUNC                                         \
+{                                                       \
+    PC_INCR_1;                                          \
+                                                        \
+    struct tm time_in = { 0, 0, 0, 9, 10, 2016 - 1900 };\
+    time_t time_temp = mktime(&time_in);                \
+    struct tm* time_out = localtime(&time_temp);        \
+                                                        \
+    if (cpu->bcode[cpu->pc] == NUMBER)                  \
+    {                                                   \
+        PC_INCR_1;                                      \
+                                                        \
+        if (time_out->tm_wday == 2)                     \
+        {                                               \
+            TAKE_ADDRESS_FROM_FLOW;                     \
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_8;                                  \
+        }                                               \
+    }                                                   \
+    else if (cpu->bcode[cpu->pc] == REGISTER)           \
+    {                                                   \
+        PC_INCR_1;                                      \
+                                                        \
+        if (time_out->tm_wday == 2)                     \
+        {                                               \
+            TAKE_ADDRESS_FROM_REGS;                     \
+        }                                               \
+        else                                            \
+        {                                               \
+            PC_INCR_1;                                  \
+        }                                               \
+    }                                                   \
+                                                        \
+    free(time_out);                                     \
+}   
+
+#define CALL_FUNC                                       \
+{                                                       \
+    PC_INCR_1;                                          \
+    PC_INCR_1                                           \
+                                                        \
+    PUSH_ADDRESS;                                       \
+                                                        \
+    TAKE_ADDRESS_FROM_FLOW;                             \
+}
+
+#define RET_FUNC                                        \
+{                                                       \
+    TAKE_ADDRESS_FROM_STACK;                            \
 }
