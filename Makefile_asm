@@ -1,6 +1,8 @@
-assembler.exe: assembler.o stack.o
-	g++ assembler.o stack.o -o assembler
-assembler.o: assembler.cpp
-	g++ -c assembler.cpp
-stack.o: stack.cpp
-	g++ -c stack.cpp
+assembler.exe: objectsFiles/assembler.o objectsFiles/stack.o
+	g++ objectsFiles/assembler.o objectsFiles/stack.o -o assembler
+
+objectsFiles/assembler.o: mainFiles/assembler.cpp
+	g++ -c mainFiles/assembler.cpp -o objectsFiles/assembler.o
+	
+objectsFiles/stack.o: mainFiles/stack.cpp
+	g++ -c mainFiles/stack.cpp -o objectsFiles/stack.o

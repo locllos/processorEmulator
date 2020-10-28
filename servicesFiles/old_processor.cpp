@@ -1,5 +1,4 @@
-#include "headers/processing_funcs.h"
-#include "headers/cpu.h"
+#include "cpu.h"
 
 elem_t Pow(const elem_t value_a, const elem_t value_b)
 {
@@ -29,6 +28,164 @@ uint64_t approxLength(const char* filename)
 	return buff->st_size;
 	
 }
+
+void In(CPU* cpu)
+{   
+    elem_t value = 0;
+    scanf("%lg", &value);
+
+    pushStack_simple(cpu->stack, value);
+
+    cpu->pc += sizeof(uint8_t);
+}
+
+void Out(CPU* cpu)
+{
+    elem_t output = 0;
+
+    printf("%lg\n", topStack_simple(cpu->stack));
+    
+    cpu->pc += sizeof(uint8_t);
+
+}
+
+void Push(CPU* cpu)
+{       
+    cpu->pc += sizeof(uint8_t);
+    
+    elem_t value = 0;
+
+    if (cpu->bcode[cpu->pc] == NUMBER)
+    {
+        cpu->pc += sizeof(uint8_t);
+
+        value = *((elem_t*)(cpu->bcode + cpu->pc));
+
+        cpu->pc += sizeof(elem_t);
+    }
+    else if (cpu->bcode[cpu->pc] == REGISTER)
+    {
+        cpu->pc += sizeof(uint8_t);
+
+        value = cpu->registers[cpu->bcode[cpu->pc]];
+
+        cpu->pc += sizeof(uint8_t);
+    }
+
+    //printf("PUSHING: %lg\n", value);
+    pushStack_simple(cpu->stack, value);
+}
+
+void Pop(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    if (cpu->bcode[cpu->pc] == NUMBER)
+    {
+        eraseStack_simple(cpu->stack);
+    }
+    else if (cpu->bcode[cpu->pc] == REGISTER)
+    {
+        cpu->pc += sizeof(uint8_t);
+        
+        cpu->registers[cpu->bcode[cpu->pc]] = popStack_simple(cpu->stack);
+    }
+    cpu->pc += sizeof(uint8_t);
+}
+
+void Add(CPU* cpu)
+{
+    const elem_t value_a = popStack_simple(cpu->stack);
+    const elem_t value_b = popStack_simple(cpu->stack);
+
+    const elem_t result = value_a + value_b;
+
+    pushStack_simple(cpu->stack, result);
+    
+    cpu->pc += sizeof(uint8_t);
+
+}
+
+void Sub(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value_a = popStack_simple(cpu->stack);
+    const elem_t value_b = popStack_simple(cpu->stack);
+
+    const elem_t result = value_b - value_a;
+    
+    pushStack_simple(cpu->stack, result);
+}
+
+void Mul(CPU* cpu)
+{   
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value_a = popStack_simple(cpu->stack);
+    const elem_t value_b = popStack_simple(cpu->stack);
+
+    const elem_t result = value_a * value_b;
+    
+    pushStack_simple(cpu->stack, result);
+}
+
+void Div(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value_a = popStack_simple(cpu->stack);
+    const elem_t value_b = popStack_simple(cpu->stack);
+
+    const elem_t result = value_b / value_a;
+    
+    pushStack_simple(cpu->stack, result);
+}
+
+void Pow(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value_a = popStack_simple(cpu->stack);
+    const elem_t value_b = popStack_simple(cpu->stack);
+
+    const elem_t result = pow(value_b, value_a);
+    
+    pushStack_simple(cpu->stack,result);
+}
+
+void Sqrt(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value = popStack_simple(cpu->stack);
+    
+    const elem_t result = sqrt(value);
+    
+    pushStack_simple(cpu->stack, result);
+} 
+
+void Sin(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value = popStack_simple(cpu->stack);
+
+    const elem_t result = sin(value);
+    
+    pushStack_simple(cpu->stack, result);
+} 
+
+void Cos(CPU* cpu)
+{
+    cpu->pc += sizeof(uint8_t);
+
+    const elem_t value = popStack_simple(cpu->stack);
+
+    const elem_t result = cos(value);
+    
+    pushStack_simple(cpu->stack, result);
+} 
 
 void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, const char* filename)
 {
@@ -129,7 +286,10 @@ void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, const char* filenam
         
         fprintf(file, "^");
     }  
-    fprintf(file, "\npc = %llu\n", pc);
+    fprintf(file, "\n");
+    fprintf(file, "pc = %llu", pc);
+    fprintf(file, "\n");
+
     fclose(file);
     
 }
@@ -152,7 +312,7 @@ void cpuDamp(CPU* cpu)
     bcodeDamp(cpu->bcode, cpu->pc, cpu->length, "logs.txt");
     registerDamp(cpu->registers, "logs.txt");
     stackDump_simple(cpu->stack, stackOk_simple(cpu->stack), __LINE__);
-    stackDump_simple(cpu->call_stack, stackOk_simple(cpu->call_stack), __LINE__);
+    //printf("CODE AT CPU: %d\n", stackOk_simple(cpu->stack));
 }
 
 void loadBytecode(CPU* cpu, const char* filename)
@@ -187,33 +347,73 @@ void loadRegisters(CPU* cpu)
     cpu->registers[3] = 0;
 }
 
-void loadStacks(CPU* cpu)
+void loadStack(CPU* cpu)
 {   
     cpu->stack = (Stack*)calloc(1, sizeof(Stack));
-    cpu->call_stack = (Stack*)calloc(1, sizeof(Stack));
 
     constructStack(cpu->stack, 1);
-    constructStack(cpu->call_stack, 1);
 }
 
-#define DEF_CMD(name, num, arg, ctrl_flow)  \
-    case name##_COMMAND:                    \
-        name##_FUNC                         \
-        break;   
-
 void Proccesor(CPU* cpu)
-{
+{ 
     cpuDamp(cpu);
     while (cpu->bcode[cpu->pc] != HLT_COMMAND && cpu->pc < cpu->length && cpu->bcode[cpu->pc] != EOF)
-    {    
-        elem_t value = 0;
-        elem_t valua_a = 0;
-        elem_t value_b = 0;
-        elem_t result = 0;
-
+    {
+        //printf("FUNCTION: %s\n", COMMANDS[cpu->bcode[cpu->pc]]);
+    
         switch(cpu->bcode[cpu->pc])
         {
-            #include "commands.h"
+            case IN_COMMAND:
+                In(cpu);
+                break;
+
+            case OUT_COMMAND:
+                Out(cpu);
+                break;
+
+            case PUSH_COMMAND:
+                Push(cpu);
+                break;
+
+            case POP_COMMAND:
+                Pop(cpu);
+                break;
+
+            case ADD_COMMAND:
+                Add(cpu);
+                break;
+
+            case SUB_COMMAND:
+                Sub(cpu);
+                break;
+            
+            case MUL_COMMAND:
+                Mul(cpu);
+                break;
+                
+            case DIV_COMMAND:
+                Div(cpu);
+                break;
+
+            case POW_COMMAND:
+                Pow(cpu);
+                break;
+            
+            case SQRT_COMMAND:
+                Sqrt(cpu);
+                break;
+            
+            case SIN_COMMAND:
+                Sin(cpu);
+                break;
+
+            case COS_COMMAND:
+                Cos(cpu);
+                break;
+            
+            case HLT_COMMAND:
+                printf("END OF PROGRAMM.\n");
+                break;
 
             default:
                 printf("UNKNOWN COMMAND!\n");
@@ -231,15 +431,13 @@ void Proccesor(CPU* cpu)
     free(cpu);
 }
 
-#undef DEF_CMD
-
 void Executing(const char* filename)
 {   
     CPU* cpu = (CPU*)calloc(1, sizeof(CPU));
 
     loadBytecode(cpu, filename);
 
-    loadStacks(cpu);
+    loadStack(cpu);
 
     loadRegisters(cpu);
 
@@ -256,23 +454,18 @@ int main(int argC, const char* argV[])
     {
         printf("%s\n", argV[i]);
     }
-    printf("\n");
+    printf("======\n");
 
-    if (argC == 1)
-    {
-        Executing(filename);
-    }
     if (argC == 2)
     {
         strcpy(filename, argV[1]);
-        Executing(filename);
-        return 0;
-
     }
     else if (argC > 2)
     {
         printf("COMMAND NOT FOUND!\n");
-        return 2;
+        return -1;
     }
+    Executing(filename);
 
+    return 0;
 }

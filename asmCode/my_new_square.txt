@@ -1,0 +1,82 @@
+IN
+IN
+IN
+POP rcx
+POP rbx
+POP rax
+
+PUSH rax
+PUSH 0
+JE LINEAR
+CALL SQUARE
+HLT
+
+LINEAR:
+    PUSH rbx
+    PUSH 0
+    JE ZERO_ROOTS
+    PUSH 1
+    OUT
+    PUSH -1
+    PUSH rbx
+    MUL
+    POP rbx
+    PUSH rcx
+    PUSH rbx
+    DIV
+    OUT
+    HLT
+
+ZERO_ROOTS:
+    PUSH 0
+    OUT
+    HLT
+
+SQUARE:
+    PUSH rbx
+    PUSH rbx
+    MUL
+    PUSH 4
+    PUSH rax
+    PUSH rcx
+    MUL
+    MUL
+    SUB
+    POP rdx
+    PUSH rdx
+    PUSH 0
+    JB ZERO_ROOTS
+    PUSH rdx
+    PUSH 0
+    JE ONE_ROOT
+    PUSH rdx
+    SQRT
+    POP rdx
+    PUSH 2
+    OUT
+    CALL ROOT
+    PUSH -1
+    PUSH rdx
+    MUL
+    POP rdx
+    CALL ROOT
+    RET
+
+ONE_ROOT:
+    PUSH 1
+    OUT
+    CALL ROOT
+    RET
+
+ROOT:
+    PUSH -1
+    PUSH rbx
+    MUL
+    PUSH rdx
+    ADD
+    PUSH 2
+    DIV
+    PUSH rax
+    DIV
+    OUT
+    RET

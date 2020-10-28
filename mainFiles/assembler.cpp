@@ -1,4 +1,4 @@
-#include "headers/cpu.h"
+#include "headers/assembler.h"
 
 #define DEF_CMD(name, num, arg, ctrl_flow)                                              \
         if (strcmp(cur_line->cmd, #name) == 0)                                          \
@@ -15,8 +15,9 @@
                 cur_line->pos += cur_line->tmp_pos;                                     \
             }                                                                           \
         }                                                                               \
-        else if (isLabelNext(cur_line))                                                 \
+        else if (isLabel(cur_line))                                                     \
         {                                                                               \
+            printf("cur_line: %s|\ncmd: %s\n", cur_line->string, cur_line->cmd);        \
             if (algorithm_pass == 0)                                                    \
             {                                                                           \
                 writeLabel(cur_line, bcode, labels);                                    \
@@ -84,11 +85,11 @@ uint64_t approxLength(const char* filename)
 {
 	assert(filename);
 	
-//	struct stat* buff = (struct stat*)calloc(1, sizeof(stat));
+    struct stat* buff = (struct stat*)calloc(1, sizeof(struct stat));
 
-//	stat(filename, buff);
+    stat(filename, buff);
 
-	return 2048;
+	return buff->st_size;
 	
 }
 
@@ -138,7 +139,6 @@ char* readContents(const char* filename, uint64_t* length)
 
 Text* parseContents(const char* filename)
 {   
-    //Sorry for legacy code. This is from Onegin project. I was hot and young...
     uint64_t length = 0;
     char** buffer = (char**)calloc(1, sizeof(char*));
     uint64_t* number_of_lines = (uint64_t*)calloc(1, sizeof(uint64_t));
@@ -231,12 +231,9 @@ void capacityProcessing(BinaryCode* bcode, const size_t elem_size)
     }
 
     //printf("BCODE->CAPACITY: %llu\n", bcode->capacity);
-    uint8_t* newRegion = (uint8_t*)realloc(bcode->code, sizeof(uint8_t) * bcode->capacity);
-    if (newRegion == NULL) {
-        printf("Failed realocating for %zu\n", sizeof(uint8_t) * bcode->capacity);
-        assert(newRegion != NULL);
-    }
-    bcode->code = newRegion;
+    uint8_t* new_region = (uint8_t*)realloc(bcode->code, sizeof(uint8_t) * bcode->capacity);
+    assert(new_region != NULL);
+    bcode->code = new_region;
     //printf("BCODE = %p\n", bcode->code);
 
 }
@@ -280,13 +277,17 @@ void pushFromOffset(BinaryCode* bcode, const void* elem, size_t elem_size)
     
 }
 
+void insertTo(BinaryCode* bcode, const void* value, const uint64_t elem_size, const uint64_t index)
+{
+    Copy(bcode->code + index, value, elem_size);
+}
+
 int ctrlFlowProcess(BinaryCode* bcode, Labels* labels, CurLine* cur_line, uint64_t alg_pass)
 {
-    cur_line->flag = NUMBER;  
+    cur_line->flag = 0x00;  
 
     printf("FIND CTRL_FLOW.\nSET FLAG: %d\n", cur_line->flag); 
 
-    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));   
     if (alg_pass == 1)                                            
     {    
         if (sscanf(cur_line->string + cur_line->pos, "%s", cur_line->cmd) == 1)                   
@@ -315,64 +316,130 @@ int ctrlFlowProcess(BinaryCode* bcode, Labels* labels, CurLine* cur_line, uint64
     else                                                                
     {
         pushFromOffset(bcode, &DAM, sizeof(elem_t));                    
-    }          
+    }       
+    outputBinary(bcode);
 
     return 0;                                               
 }
 
-int isNumberNext(CurLine* cur_line)
+void movePosAfterOpenBrackets(CurLine* cur_line)
 {
-    int tmp_pos = 0;
-    if (sscanf(cur_line->string + cur_line->pos, "%lg%n", &cur_line->value, &tmp_pos) == 1)
-    {
-        cur_line->tmp_pos = tmp_pos;
+    printf("STRING BEFORE OPEN BRACKET: %s\n", cur_line->string + cur_line->pos);
 
+    char* find_brackets = strchr(cur_line->string + cur_line->pos, '[');
+    
+    cur_line->pos =  (find_brackets + 1 - cur_line->string);
+    
+    cur_line->flag |= 0x04;
+
+    printf("POS AFTER OPEN BRACKET: %s\n", cur_line->string + cur_line->pos);
+
+}
+
+void movePosAfterAdditioal(CurLine* cur_line)
+{   
+    printf("STRING BEFORE ADD: %s\n", cur_line->string + cur_line->pos);
+    char* find_additional = strchr(cur_line->string + cur_line->pos, '+');
+    cur_line->pos =  (find_additional + 1 - cur_line->string);
+    printf("POS AFTER ADD: %s\n", cur_line->string + cur_line->pos);
+
+}
+
+int isNumber(CurLine* cur_line)
+{
+    if (sscanf(cur_line->string + cur_line->pos, "%lg", &cur_line->value) == 1)
+    {
         return 1;
     }
 
     return 0;
 }
 
-int isStringNext(CurLine* cur_line)
+int isString(CurLine* cur_line)
 {
-    int tmp_pos = 0;
-    if (sscanf(cur_line->string + cur_line->pos, "%s%n", cur_line->reg, &tmp_pos) == 1)
-    {
-        cur_line->tmp_pos += tmp_pos;
-        
+    if (sscanf(cur_line->string + cur_line->pos, "%s", cur_line->reg) == 1)
+    {        
         return 1;
     }
 
     return 0;
 }
 
-int isRegisterNext(CurLine* cur_line)
+int isRegister(CurLine* cur_line)
 {
-    cur_line->reg_index = indexStringInArray(cur_line->reg, REGISTERS, AMOUNT_REGISTERS);
+    cur_line->reg_index = indexStringInArray(cur_line->cmd, REGISTERS, AMOUNT_REGISTERS);
 
     return (cur_line->reg_index > -1 && cur_line->reg_index < AMOUNT_REGISTERS);
 }
 
-int isLabelNext(CurLine* cur_line)
+int isLabel(CurLine* cur_line)
 {
     return (cur_line->cmd[strlen(cur_line->cmd) - 1] == ':');
+}
+
+int isAdditional(CurLine* cur_line)
+{
+    return (strchr(cur_line->string + cur_line->pos, '+') != NULL);
+}
+
+int isOpenBrackets(CurLine* cur_line)
+{
+    return (cur_line->cmd[0] == '[');
+}
+
+int isCloseBrackets(CurLine* cur_line)
+{
+    return (strchr(cur_line->cmd, ']') != NULL);
+}
+
+void readNext(CurLine* cur_line)
+{
+    int tmp_pos = 0;
+    sscanf(cur_line->string + cur_line->pos, "%s%n", cur_line->cmd, &tmp_pos);
+    
+    cur_line->tmp_pos += tmp_pos;
+}
+
+void clearBrackets(char* string)
+{
+    char* left = string;
+    char* right = string + strlen(string) - 1;
+
+    while (left < right)
+    {
+        if (*left == '[')
+        {
+            *left = ' ';
+        }
+
+        if (*right == ']')
+        {
+            *right = ' ';
+        }
+
+        --right;
+        ++left;
+    }
 }
 
 void writeNumber(CurLine* cur_line, BinaryCode* bcode)
 {   
     sscanf(cur_line->string + cur_line->pos, "%lg%n", &cur_line->value, &cur_line->tmp_pos);
-    cur_line->flag = NUMBER;                                                      
+    cur_line->flag |= 0x01;        
+    //cur_line->flag = (cur_line->flag & 0x01) ? cur_line->flag : cur_line->flag + 0x01;   
+
     printf("FIND NUMBER.\nSET FLAG: %d\n", cur_line->flag);                       
-    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));                     
+    //pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));                     
     printf("VALUE OF NUMBER: %lg\n", cur_line->value);                     
     pushFromOffset(bcode, &cur_line->value, sizeof(elem_t));  
 }
 
 void writeRegister(CurLine* cur_line, BinaryCode* bcode)
 {
-    cur_line->flag = REGISTER;                                                
+    //cur_line->flag = REGISTER; 
+    cur_line->flag |= 0x02;                                                       
     printf("FIND REGISTER.\nSET FLAG: %d\nREGISTER ADDRESS: %s\n", cur_line->flag, cur_line->reg);
-    pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));          
+    //pushFromOffset(bcode, &cur_line->flag, sizeof(uint8_t));          
     pushFromOffset(bcode, &cur_line->reg_index, sizeof(int8_t));     
 }
 
@@ -395,6 +462,7 @@ int registerError(CurLine* cur_line)
 int argumentError(CurLine* cur_line)
 {
     printf("ARGUMENT DOESNT FIND AT LINE %llu!\n", cur_line->line); 
+    printf("->%s\n", cur_line->cmd);
 
     return 3;
 }
@@ -421,6 +489,10 @@ void writeToBinary(BinaryCode* bcode, const char* filename)
 
 int oneArgumentProcessing(CurLine* cur_line, BinaryCode* bcode, Labels* labels, const uint8_t ctrl_flow, const uint8_t alg_pass)
 {
+    cur_line->flag = 0x00;
+    uint64_t flag_address = bcode->offset; 
+    pushFromOffset(bcode, &cur_line->flag, sizeof(int8_t));
+
     if (isCtrlFlow(ctrl_flow))                                          
     {                                                                       
         if (ctrlFlowProcess(bcode, labels, cur_line, alg_pass) != 0)  
@@ -429,26 +501,78 @@ int oneArgumentProcessing(CurLine* cur_line, BinaryCode* bcode, Labels* labels, 
         }            
         return 0;                                                           
     }                                                                       
-    if (isNumberNext(cur_line))                                             
-    {                                                                       
-        writeNumber(cur_line, bcode);                                       
+    if (isNumber(cur_line))                                             
+    {   
+        writeNumber(cur_line, bcode);   
+        outputBinary(bcode);                                    
     }                                                                       
-    else if (isStringNext(cur_line))                                        
-    {                                                                       
-        if (isRegisterNext(cur_line))                                       
-        {                                                                  
-            writeRegister(cur_line, bcode);                            
-        }                                                                   
+    else if (isString(cur_line))                                        
+    {                             
+        readNext(cur_line);
+        printf("READ: %s\n", cur_line->cmd);                                      
+        if (isOpenBrackets(cur_line))
+        {
+            movePosAfterOpenBrackets(cur_line);
+            readNext(cur_line);
+            clearBrackets(cur_line->cmd);
+        }
+        if (isNumber(cur_line))
+        {
+            writeNumber(cur_line, bcode);
+            if (!isCloseBrackets)
+            {
+                return argumentError(cur_line);
+            }
+            // outputBinary(bcode);
+        }   
+        else if (isRegister(cur_line))                                       
+        {   
+            writeRegister(cur_line, bcode);
+
+            if (isAdditional(cur_line))
+            {
+                movePosAfterAdditioal(cur_line);
+                if (isNumber(cur_line))
+                {
+                    writeNumber(cur_line, bcode);
+                }
+                else
+                {
+                    return argumentError(cur_line);
+                }
+                readNext(cur_line);
+                if (!isCloseBrackets)
+                {
+                    return argumentError(cur_line);
+                }
+            }
+            // outputBinary(bcode);
+        }                                                        
         else                                                                
-        {                                                                   
-            return registerError(cur_line);                                 
-        }                                                                   
+        {                                                         
+            return argumentError(cur_line);                                 
+        }                                                             
     }                                                                       
     else                                                                    
     {                                                                       
         return argumentError(cur_line);                                     
     }
+
+    insertTo(bcode, &cur_line->flag, sizeof(uint8_t), flag_address);
     return 0;
+}
+
+void outputBinary(BinaryCode* bcode)
+{
+    printf("BINARY CODE:\n");
+    for (size_t i = 0; i < bcode->length; ++i)
+    {
+        printf("%02X ", bcode->code[i]);
+        
+        if (i % 16 == 0 && i != 0) 
+            printf("\n");
+    }
+    printf("\n");
 }
 
 CurLine* newCurLine()
@@ -468,17 +592,18 @@ CurLine* newCurLine()
     return cur_line;
 }
 
-void commentsProcessing(CurLine* cur_line)
+int commentsProcessing(CurLine* cur_line)
 {
     char* def_end = strchr(cur_line->string, ';');                                              
     if (def_end != NULL)                                                            
     {    
         if (cur_line->string == def_end)
         {
-            return;
+            return 1;
         }                                                                     
         *def_end = '\0';    
     }
+    return 0;
 }
 
 int endingsProcess(CurLine* cur_line)
@@ -542,7 +667,10 @@ int codeProcessing(const char* filename, const char* binary_filename)
             cur_line->line = i + 1;
 
             //"Delete" comments 
-            commentsProcessing(cur_line);
+            if (commentsProcessing(cur_line) != 0)
+            {
+                continue;
+            }
 
             int tmp_pos = 0;
             sscanf(cur_line->string, "%s%n", cur_line->cmd, &tmp_pos);

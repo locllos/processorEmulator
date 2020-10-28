@@ -1,4 +1,4 @@
-#include "stack.h"
+#include "headers/stack.h"
 
 #define DEBUG
 
@@ -23,6 +23,7 @@ int hashSum(const void* buffer, const int length)
     const int heshy = 15487457 * 23;
     int hash_sum = 0;
 
+    
     for (int i = 0; i < length; ++i)
     {
         hash_sum += ((int)((char*)buffer + i) * (i + 1)) % heshy;
@@ -40,11 +41,11 @@ int checkSum(Stack* stack)
 {
     const int heshy = 15487457 * 23;
 
-    int check_sum = (int)stack;
-    check_sum += (int)stack->capacity;
-    check_sum += (int)stack->size;
+    int check_sum = 0;
+
 
     check_sum += hashSum(stack->buffer, stack->size * sizeof(elem_t));
+
 
     for (int i = 0; i < stack->size; ++i)
     {
@@ -55,9 +56,6 @@ int checkSum(Stack* stack)
             check_sum %= heshy;
         }
     }
-
-    check_sum += (int)stack->buffer;
-
     return check_sum;
 }
 

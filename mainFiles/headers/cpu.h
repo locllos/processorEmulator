@@ -1,6 +1,6 @@
 #include "stack.h"
 #include <string.h>
-#include <math.h>
+//#include <math.h>
 #include <time.h>
 #include <assert.h>
 #include <sys\stat.h> //Only for windows users :(
@@ -10,6 +10,8 @@ const uint8_t AMOUNT_REGISTERS = 4;
 const uint8_t BASE_CAPACITY = 10;
 const uint64_t NUM_ALGORITHM_PASS = 2;
 const elem_t DAM = -1;
+const size_t RAM_SIZE = 1024;
+const size_t GRAM_SIZE = 128 * 128;
 
 const char* COMMANDS[AMOUNT_COMMANDS] = 
 {   
@@ -70,6 +72,7 @@ typedef struct CPU
 {
     Stack* stack;
     Stack* call_stack;
+    elem_t* RAM;
 
     uint8_t* bcode;
     uint64_t length;
@@ -130,7 +133,7 @@ typedef struct CurLine
     int tmp_pos;
     uint64_t line;
 
-    FLAG flag;
+    uint8_t flag;
     Label* cur_label;
 
 } CurLine;

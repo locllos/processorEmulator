@@ -1,0 +1,37 @@
+# 1 "enum.h"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "enum.h"
+
+
+
+typedef enum COMMAND
+{
+# 1 "commands.h" 1
+IN_COMMAND = 1,
+
+OUT_COMMAND = 2,
+
+PUSH_COMMAND = 3,
+
+POP_COMMAND = 4,
+
+ADD_COMMAND = 5,
+
+SUB_COMMAND = 6,
+
+MUL_COMMAND = 7,
+
+DIV_COMMAND = 8,
+
+POW_COMMAND = 9,
+
+SQRT_COMMAND = 10,
+
+SIN_COMMAND = 11,
+
+COS_COMMAND = 12,
+
+HLT_COMMAND = 13,
+# 7 "enum.h" 2
+} COMMAND;

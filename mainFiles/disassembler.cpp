@@ -32,7 +32,7 @@ BinaryCode* openBinaryCode(const char* filename)
 
 }
 
-#define DEF_CMD(name, num, arg)                             \
+#define DEF_CMD(name, num, arg, ctrl_flow)                  \
     if (bcode->code[bcode->offset] == num)                  \
     {                                                       \
         fprintf(file, #name);                               \

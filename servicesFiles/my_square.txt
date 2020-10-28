@@ -1,0 +1,82 @@
+START:
+IN
+POP rax
+IN
+POP rbx
+IN
+POP rcx
+;-------
+PUSH rax
+PUSH 0
+JE ONE_ROOT
+JMP DISCR
+;--------
+ONE_ROOT:
+    CALL LINEAR
+    HLT
+;--------
+LINEAR: 
+	PUSH 1
+	OUT
+	POP rax
+	PUSH rcx
+	PUSH -1
+	MUL
+	PUSH rbx
+	DIV
+	OUT
+	RET
+;---------
+DISCR:
+	PUSH rbx
+	PUSH rbx
+	MUL
+	PUSH -4
+	PUSH rax
+	PUSH rcx
+	MUL
+	MUL
+	ADD
+	POP rdx
+
+	PUSH rdx
+	PUSH 0
+	JAE TWO_ROOT
+	PUSH rdx
+	OUT
+	RET
+;---------
+TWO_ROOT:
+	CALL ROOTS
+	HLT
+;---------
+ROOTS:
+    PUSH rax
+	PUSH 2
+	OUT 
+	POP rax
+    POP rax
+	PUSH rdx
+	SQRT
+	POP rdx
+	PUSH -1
+	PUSH rbx
+	MUL
+	PUSH rdx
+	ADD
+	PUSH 2
+	PUSH rax
+	MUL
+	DIV
+	OUT
+	PUSH -1
+	PUSH rbx
+	MUL
+	PUSH rdx
+	SUB
+	PUSH 2
+	PUSH rax
+	MUL
+	DIV
+	OUT
+	RET

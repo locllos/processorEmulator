@@ -1,6 +1,8 @@
-processor.exe: processor.o stack.o
-	g++ processor.o stack.o -o processor
-processor.o: processor.cpp
-	g++ -c processor.cpp
-stack.o: stack.cpp
-	g++ -c stack.cpp
+processor.exe: objectsFiles/processor.o objectsFiles/stack.o
+	g++ objectsFiles/processor.o objectsFiles/stack.o -o processor
+
+objectsFiles/processor.o: mainFiles/processor.cpp
+	g++ -c mainFiles/processor.cpp -o objectsFiles/processor.o
+	
+objectsFiles/stack.o: mainFiles/stack.cpp
+	g++ -c mainFiles/stack.cpp -o objectsFiles/stack.o

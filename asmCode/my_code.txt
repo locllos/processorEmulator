@@ -1,0 +1,5 @@
+IN 
+POP [rax + 2]
+PUSH [rax + 2]
+OUT
+HLT

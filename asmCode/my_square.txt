@@ -1,0 +1,100 @@
+IN
+IN
+IN
+CALL SQUARE_EQUATION
+HLT
+
+SQUARE_EQUATION:
+	POP rcx
+	POP rbx
+	POP rax
+	PUSH rax
+	PUSH 0
+	JE LINEAR
+	CALL SQUARE
+	RET
+
+LINEAR:
+	PUSH rbx
+	PUSH 0
+	JE ZERO_ROOTS
+	PUSH rbx
+	PUSH -1
+	MUL
+	PUSH rcx
+	DIV
+	OUT
+	RET
+
+ZERO_ROOTS:
+	PUSH 0
+	OUT
+	RET
+
+	
+SQUARE:	
+	PUSH rbx
+	PUSH rbx
+	MUL
+	PUSH 4
+	PUSH rax
+	PUSH rcx
+	MUL
+	MUL
+	SUB
+	POP rdx
+	PUSH rdx
+	PUSH 0	
+	JA TWO_ROOTS
+	PUSH rdx
+	PUSH 0
+	JE ONE_ROOT
+	CALL ZERO_ROOTS 
+	RET
+
+ONE_ROOT:
+	PUSH -1
+	PUSH rbx
+	MUL
+	PUSH 2
+	DIV
+	PUSH rcx
+	DIV
+	OUT
+	RET
+
+
+TWO_ROOTS:
+	PUSH rdx
+	SQRT
+	POP rdx
+    PUSH rax
+	PUSH 2
+	OUT 
+	POP rax
+    POP rax
+	PUSH rdx
+	SQRT
+	POP rdx
+	PUSH -1
+	PUSH rbx
+	MUL
+	PUSH rdx
+	ADD
+	PUSH 2
+	PUSH rax
+	MUL
+	DIV
+	OUT
+	PUSH -1
+	PUSH rbx
+	MUL
+	PUSH rdx
+	SUB
+	PUSH 2
+	PUSH rax
+	MUL
+	DIV
+	OUT
+	RET
+	

@@ -1,0 +1,111 @@
+# 1 "disassembler.cpp"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "disassembler.cpp"
+
+
+uint64_t approxLength(const char* filename)
+{
+ assert(filename);
+
+ struct stat* buff = (struct stat*)calloc(1, sizeof(struct stat));
+
+ stat(filename, buff);
+
+ return buff->st_size;
+
+}
+
+BinaryCode* openBinaryCode(const char* filename)
+{
+    BinaryCode* binary_code = (BinaryCode*)calloc(1, sizeof(BinaryCode));
+    binary_code->length = approxLength(filename);
+    FILE* file = fopen(filename, "rb");
+
+    if (file == NULL)
+    {
+        printf("FILE DOESNT FIND!\n");
+
+        return NULL;
+    }
+
+    binary_code->code = (uint8_t*)calloc(binary_code->length, sizeof(uint8_t));
+    binary_code->length = fread(binary_code->code, sizeof(uint8_t), binary_code->length, file);
+    binary_code->offset = 0;
+
+    return binary_code;
+
+}
+# 72 "disassembler.cpp"
+void binaryCodeProcessing(const char* binary_filename, const char* filename)
+{
+    BinaryCode* bcode = openBinaryCode(binary_filename);
+
+    FILE* file = fopen(filename, "w");
+
+    elem_t value = 0;
+    uint64_t reg_index = 0;
+    uint8_t* num_address = NULL;
+    uint8_t flag = NUMBER;
+
+    while (bcode->offset < bcode->length)
+    {
+        value = 0;
+        reg_index = 0;
+        num_address = NULL;
+        flag = NUMBER;
+
+# 1 "commands.h" 1
+if (bcode->code[bcode->offset] == 1) { fprintf(file, "IN"); printf("FIND COMMAND: %s\n", "IN"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 2) { fprintf(file, "OUT"); printf("FIND COMMAND: %s\n", "OUT"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 3) { fprintf(file, "PUSH"); printf("FIND COMMAND: %s\n", "PUSH"); bcode->offset += sizeof(uint8_t); if (1 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 4) { fprintf(file, "POP"); printf("FIND COMMAND: %s\n", "POP"); bcode->offset += sizeof(uint8_t); if (1 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 5) { fprintf(file, "ADD"); printf("FIND COMMAND: %s\n", "ADD"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 6) { fprintf(file, "SUB"); printf("FIND COMMAND: %s\n", "SUB"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 7) { fprintf(file, "MUL"); printf("FIND COMMAND: %s\n", "MUL"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 8) { fprintf(file, "DIV"); printf("FIND COMMAND: %s\n", "DIV"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 9) { fprintf(file, "POW"); printf("FIND COMMAND: %s\n", "POW"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 10) { fprintf(file, "SQRT"); printf("FIND COMMAND: %s\n", "SQRT"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 11) { fprintf(file, "SIN"); printf("FIND COMMAND: %s\n", "SIN"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 12) { fprintf(file, "COS"); printf("FIND COMMAND: %s\n", "COS"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+
+if (bcode->code[bcode->offset] == 13) { fprintf(file, "HLT"); printf("FIND COMMAND: %s\n", "HLT"); bcode->offset += sizeof(uint8_t); if (0 == 1) { fprintf(file, " "); flag = bcode->code[bcode->offset]; bcode->offset += sizeof(uint8_t); printf("FIND FLAG: %d\n", flag); if (flag == NUMBER) { num_address = bcode->code + bcode->offset; value = *((elem_t*)num_address); printf("FIND NUMBER: %lg\n", value); fprintf(file, "%lg", value); bcode->code += sizeof(elem_t); } else if (bcode->code[bcode->offset] == REGISTER) { reg_index = bcode->code[bcode->offset]; printf("FIND NUMBER: %s\n", REGISTERS[reg_index]); fprintf(file, REGISTERS[reg_index]); bcode->offset += sizeof(uint8_t); } } fprintf(file, "\n"); } else
+# 91 "disassembler.cpp" 2
+
+
+        {
+            printf("ERROR COMMAND DOESNT FIND!\n");
+            printf("COMMAND CODE: %d\n", bcode->code[bcode->offset]);
+            break;
+        }
+
+    }
+}
+
+
+
+int main(int argC, const char* argV[])
+{
+    char* filename = (char*)calloc(32, sizeof(char));
+    char* binary_filename = (char*)calloc(32, sizeof(char));
+
+    strcpy(filename, "your_code.txt");
+    strcpy(binary_filename, "bc.bin");
+
+
+
+    binaryCodeProcessing(binary_filename, filename);
+
+    return 0;
+}
