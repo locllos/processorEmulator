@@ -67,3 +67,5 @@ int codeProcessing(const char* filename, const char* binary_filename);
 void insertTo(BinaryCode* bcode, const void* value, const uint64_t elem_size, const uint64_t index);
 
 void outputBinary(BinaryCode* bcode);
+
+void clearCloseBracket(char* string);

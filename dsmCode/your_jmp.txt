@@ -1,0 +1,19 @@
+IN 
+CALL 13
+OUT 
+HLT 
+POP rax 
+PUSH 1
+CALL 37
+RET 
+PUSH rax 
+MUL 
+PUSH rax 
+PUSH 1
+SUB 
+POP rax 
+PUSH 1
+PUSH rax 
+JAE 91
+CALL 37
+RET 

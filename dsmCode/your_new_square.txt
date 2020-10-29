@@ -1,0 +1,71 @@
+IN 
+IN 
+IN 
+POP rcx 
+POP rbx 
+POP rax 
+PUSH rax 
+PUSH 0
+JE 46
+CALL 118
+HLT 
+PUSH rbx 
+PUSH 0
+JE 106
+PUSH 1
+OUT 
+PUSH -1
+PUSH rbx 
+MUL 
+POP rbx 
+PUSH rcx 
+PUSH rbx 
+DIV 
+OUT 
+HLT 
+PUSH 0
+OUT 
+HLT 
+PUSH rbx 
+PUSH rbx 
+MUL 
+PUSH 4
+PUSH rax 
+PUSH rcx 
+MUL 
+MUL 
+SUB 
+POP rdx 
+PUSH rdx 
+PUSH 0
+JB 106
+PUSH rdx 
+PUSH 0
+JE 249
+PUSH rdx 
+SQRT 
+POP rdx 
+PUSH 2
+OUT 
+CALL 271
+PUSH -1
+PUSH rdx 
+MUL 
+POP rdx 
+CALL 271
+RET 
+PUSH 1
+OUT 
+CALL 271
+RET 
+PUSH -1
+PUSH rbx 
+MUL 
+PUSH rdx 
+ADD 
+PUSH 2
+DIV 
+PUSH rax 
+DIV 
+OUT 
+RET 

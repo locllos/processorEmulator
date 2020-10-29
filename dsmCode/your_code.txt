@@ -1,0 +1,15 @@
+IN 
+POP [rax + 2]
+PUSH [rax + 2]
+OUT 
+IN 
+POP rdx
+IN 
+POP [rdx]
+PUSH [rdx]
+OUT 
+IN 
+POP [2]
+PUSH [2]
+OUT 
+HLT 

@@ -54,7 +54,40 @@ void prepareBcodeDamp(FILE* file, uint64_t power)
     }
 }
 
-void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, FILE* file)
+void pcAtFirstLine(BinaryCode* bcode, FILE* file, uint64_t pc, uint64_t length)
+{
+    fprintf(file, "\n");
+    fprintf(file, "%X: ", 16);
+    for (uint64_t i = 0; i < length; ++i)
+    {
+        fprintf(file, "%02X ", bcode[i]);
+    }
+    fprintf(file, "\n    ");
+    for (uint64_t i = 0; i < (pc % 16) * 2 + (pc % 16); ++i)
+    {
+        fprintf(file, "~");
+    }
+    fprintf(file, "^");
+    fprintf(file, "\n");
+}
+
+void pcAtLastLine(FILE* file, uint64_t pc, uint64_t length, uint64_t power, uint64_t power_i)
+{
+    fprintf(file, "\n");
+    for (uint64_t j = 0; j < power + power_i + 2; ++j)
+    {
+        fprintf(file, " ");
+    }
+    
+    for (uint64_t k = 0; k < (pc % 16) * 2 + (pc % 16); ++k)
+    {
+        fprintf(file, "~");
+    }
+    
+    fprintf(file, "^");
+}
+
+void bcodeDamp(BinaryCode* bcode, uint64_t pc, uint64_t length, FILE* file)
 {
     fprintf(file, "\n================================================\n");
     fprintf(file, "DAMP OF CPU:\n");
@@ -66,20 +99,7 @@ void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, FILE* file)
     
     if (length <= 16)
     {   
-        fprintf(file, "\n");
-        fprintf(file, "%X: ", 16);
-        for (uint64_t i = 0; i < length; ++i)
-        {
-            fprintf(file, "%02X ", bcode[i]);
-        }
-        fprintf(file, "\n    ");
-        for (uint64_t i = 0; i < (pc % 16) * 2 + (pc % 16); ++i)
-        {
-            fprintf(file, "~");
-        }
-        fprintf(file, "^");
-        fprintf(file, "\n");
-
+        pcAtFirstLine(bcode, file, pc, length);
         return;
     }
     
@@ -101,7 +121,6 @@ void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, FILE* file)
                 }
                 fprintf(file, "^");
             }
-            
             fprintf(file, "\n");
             power_i = findPower16(i + 1);
             for (uint64_t j = 0; j < power - power_i; ++j)
@@ -118,18 +137,7 @@ void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length, FILE* file)
     
     if (length / 16 == pc / 16)
     {   
-        fprintf(file, "\n");
-        for (uint64_t j = 0; j < power + power_i + 2; ++j)
-        {
-            fprintf(file, " ");
-        }
-        
-        for (uint64_t k = 0; k < (pc % 16) * 2 + (pc % 16); ++k)
-        {
-            fprintf(file, "~");
-        }
-        
-        fprintf(file, "^");
+        pcAtLastLine(file, pc, length, power, power_i);
     }  
     fprintf(file, "\npc = %llu\n", pc);    
 }

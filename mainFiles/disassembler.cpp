@@ -11,6 +11,64 @@ uint64_t approxLength(const char* filename)
 	return buff->st_size;
 }
 
+int isCommand(BinaryCode* bcode, const uint8_t num)
+{
+    return (bcode->code[bcode->offset] == num);
+}
+
+int isNumber(uint8_t flag)
+{
+    return (flag & 0x01) != 0;
+}
+
+int isCtrlFlow(uint8_t flag)
+{
+    return (flag == 0);
+}
+
+int isRegister(uint8_t flag)
+{
+    return (flag & 0x02) != 0;
+}
+
+int isRAM(uint8_t flag)
+{
+    return (flag & 4) != 0;
+}
+
+void writeTextNumber(BinaryCode* bcode, FILE* file)
+{
+    uint8_t* num_address = bcode->code + bcode->offset; 
+    elem_t value = *((elem_t*)num_address);            
+                                                
+    printf("FIND NUMBER: %lg\n", value);        
+    fprintf(file, "%lg", value);                
+                                                
+    bcode->offset += sizeof(elem_t);  
+}
+
+void writeTextRegister(BinaryCode* bcode, FILE* file, uint8_t flag)
+{
+    uint8_t reg_index = bcode->code[bcode->offset];     
+    printf("FIND REGISTER: %s\n", REGISTERS[reg_index]);
+    fprintf(file, REGISTERS[reg_index]);         
+                                                
+    bcode->offset += sizeof(uint8_t);
+
+    if (isRAM(flag) && isNumber(flag))
+    {
+        fprintf(file, " + ");
+    }
+}
+
+void writeTextCommand(BinaryCode* bcode, FILE* file, const char* name)
+{
+        fprintf(file, name);                           
+                                                            
+        printf("FIND COMMAND: %s\n", name);                
+        bcode->offset += sizeof(uint8_t);   
+}
+
 BinaryCode* openBinaryCode(const char* filename)
 {
     BinaryCode* binary_code = (BinaryCode*)calloc(1, sizeof(BinaryCode));
@@ -32,38 +90,47 @@ BinaryCode* openBinaryCode(const char* filename)
 
 }
 
+void writeTextOpenBracket(BinaryCode* bcode, FILE* file)
+{
+    fprintf(file, "[");
+}
+
+void writeTextCloseBracket(BinaryCode* bcode, FILE* file)
+{
+    fprintf(file, "]");
+}
+
+void writeOneArgument(BinaryCode* bcode, FILE* file)
+{
+    uint8_t flag = bcode->code[bcode->offset];
+    bcode->offset += sizeof(uint8_t);      
+    printf("FIND FLAG: %d\n", flag);       
+    if (isRAM(flag))                       
+    {                                      
+        writeTextOpenBracket(bcode, file);
+    }                                      
+    if (isRegister(flag))                  
+    {                                      
+        writeTextRegister(bcode, file, flag);    
+    }                                      
+    if (isNumber(flag) || isCtrlFlow(flag))
+    {                                      
+        writeTextNumber(bcode, file);
+    }                                      
+    if (isRAM(flag))                       
+    {                                      
+        writeTextCloseBracket(bcode, file);
+    }
+}
+
 #define DEF_CMD(name, num, arg, ctrl_flow)                  \
-    if (bcode->code[bcode->offset] == num)                  \
+    if (isCommand(bcode, num))                              \
     {                                                       \
-        fprintf(file, #name);                               \
-                                                            \
-        printf("FIND COMMAND: %s\n", #name);                \
-        bcode->offset += sizeof(uint8_t);                   \
+        writeTextCommand(bcode, file, #name);               \
+        fprintf(file, " ");                                 \
         if (arg == 1)                                       \
         {                                                   \
-            fprintf(file, " ");                             \
-                                                            \
-            flag = (FLAG)bcode->code[bcode->offset];        \
-            bcode->offset += sizeof(uint8_t);               \
-            printf("FIND FLAG: %d\n", flag);                \
-            if (flag == NUMBER)                             \
-            {                                               \
-                num_address = bcode->code + bcode->offset;  \
-                value = *((elem_t*)num_address);            \
-                                                            \
-                printf("FIND NUMBER: %lg\n", value);        \
-                fprintf(file, "%lg", value);                \
-                                                            \
-                bcode->offset += sizeof(elem_t);            \
-            }                                               \
-            else if (flag == REGISTER)                      \
-            {                                               \
-                reg_index = bcode->code[bcode->offset];     \
-                printf("FIND NUMBER: %s\n", REGISTERS[reg_index]);\
-                fprintf(file, REGISTERS[reg_index]);         \
-                                                            \
-                bcode->offset += sizeof(uint8_t);           \
-            }                                               \
+            writeOneArgument(bcode, file);                  \
         }                                                   \
         fprintf(file, "\n");                                \
     } else                                                  

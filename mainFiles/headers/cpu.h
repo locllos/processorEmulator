@@ -39,12 +39,12 @@ const char* REGISTERS[AMOUNT_REGISTERS] =
     "rdx"
 };
 
-typedef enum FLAG
+typedef enum FLAGS
 {
-    NUMBER = 0,
-    REGISTER = 1
-
-} FLAG;
+    NUM = 0x01,
+    REG = 0x02,
+    RAM = 0x04,
+} FLAGS;
 
 /*typedef enum COMMAND
 {
@@ -67,6 +67,12 @@ typedef enum FLAG
 } COMMAND; */
 #include "enum.h"
 
+typedef enum FLAG
+{
+    NUMBER = 0,
+    REGISTER = 1
+
+} FLAG;
 
 typedef struct CPU
 {

@@ -317,31 +317,26 @@ int ctrlFlowProcess(BinaryCode* bcode, Labels* labels, CurLine* cur_line, uint64
     {
         pushFromOffset(bcode, &DAM, sizeof(elem_t));                    
     }       
-    outputBinary(bcode);
+    // outputBinary(bcode);
 
     return 0;                                               
 }
 
-void movePosAfterOpenBrackets(CurLine* cur_line)
+void writeRAMFlag(CurLine* cur_line)
 {
-    printf("STRING BEFORE OPEN BRACKET: %s\n", cur_line->string + cur_line->pos);
-
     char* find_brackets = strchr(cur_line->string + cur_line->pos, '[');
     
     cur_line->pos =  (find_brackets + 1 - cur_line->string);
     
     cur_line->flag |= 0x04;
-
-    printf("POS AFTER OPEN BRACKET: %s\n", cur_line->string + cur_line->pos);
-
 }
 
 void movePosAfterAdditioal(CurLine* cur_line)
 {   
-    printf("STRING BEFORE ADD: %s\n", cur_line->string + cur_line->pos);
+    // printf("STRING BEFORE ADD: %s\n", cur_line->string + cur_line->pos);
     char* find_additional = strchr(cur_line->string + cur_line->pos, '+');
     cur_line->pos =  (find_additional + 1 - cur_line->string);
-    printf("POS AFTER ADD: %s\n", cur_line->string + cur_line->pos);
+    // printf("POS AFTER ADD: %s\n", cur_line->string + cur_line->pos);
 
 }
 
@@ -367,7 +362,8 @@ int isString(CurLine* cur_line)
 
 int isRegister(CurLine* cur_line)
 {
-    cur_line->reg_index = indexStringInArray(cur_line->cmd, REGISTERS, AMOUNT_REGISTERS);
+    cur_line->reg_index = indexStringInArray(cur_line->cmd, REGISTERS, AMOUNT_REGISTERS); 
+    printf("REG:%s|\n", cur_line->cmd);
 
     return (cur_line->reg_index > -1 && cur_line->reg_index < AMOUNT_REGISTERS);
 }
@@ -400,26 +396,16 @@ void readNext(CurLine* cur_line)
     cur_line->tmp_pos += tmp_pos;
 }
 
-void clearBrackets(char* string)
+void clearCloseBracket(CurLine* cur_line)
 {
-    char* left = string;
-    char* right = string + strlen(string) - 1;
+    char* close_bkt = strchr(cur_line->string + cur_line->pos, ']');
 
-    while (left < right)
+    if (close_bkt != NULL)
     {
-        if (*left == '[')
-        {
-            *left = ' ';
-        }
-
-        if (*right == ']')
-        {
-            *right = ' ';
-        }
-
-        --right;
-        ++left;
+        *close_bkt = ' ';
     }
+
+    printf("STRING: %s\n", cur_line->string + cur_line->pos);
 }
 
 void writeNumber(CurLine* cur_line, BinaryCode* bcode)
@@ -512,20 +498,11 @@ int oneArgumentProcessing(CurLine* cur_line, BinaryCode* bcode, Labels* labels, 
         printf("READ: %s\n", cur_line->cmd);                                      
         if (isOpenBrackets(cur_line))
         {
-            movePosAfterOpenBrackets(cur_line);
+            writeRAMFlag(cur_line);
+            clearCloseBracket(cur_line);
             readNext(cur_line);
-            clearBrackets(cur_line->cmd);
         }
-        if (isNumber(cur_line))
-        {
-            writeNumber(cur_line, bcode);
-            if (!isCloseBrackets)
-            {
-                return argumentError(cur_line);
-            }
-            // outputBinary(bcode);
-        }   
-        else if (isRegister(cur_line))                                       
+        if (isRegister(cur_line))                                    
         {   
             writeRegister(cur_line, bcode);
 
@@ -541,13 +518,14 @@ int oneArgumentProcessing(CurLine* cur_line, BinaryCode* bcode, Labels* labels, 
                     return argumentError(cur_line);
                 }
                 readNext(cur_line);
-                if (!isCloseBrackets)
-                {
-                    return argumentError(cur_line);
-                }
             }
             // outputBinary(bcode);
-        }                                                        
+        }      
+        else if (isNumber(cur_line))
+        {
+            writeNumber(cur_line, bcode);
+            // outputBinary(bcode);
+        }                                                     
         else                                                                
         {                                                         
             return argumentError(cur_line);                                 
