@@ -124,6 +124,6 @@
 
 #define TAKE_COORD(coord) coord = (uint64_t)popStack_simple(cpu->stack)
 
-#define MARK cpu->RAM[RAM + sizeX * hdl.coordY + hdl.coordX] = (char)(*((elem_t*)(cpu->bcode + cpu->pc)))
+#define MARK *((char*)cpu->RAM + RAM_SIZE * sizeof(elem_t) + sizeX * hdl.coordY + hdl.coordX) = (char)(*((elem_t*)(cpu->bcode + cpu->pc)))
 
-#define UNMARK cpu->RAM[RAM + sizeY * hdl.coordY + hdl.coordX] = ' '
+#define UNMARK *((char*)cpu->RAM + RAM_SIZE * sizeof(elem_t) + sizeX * hdl.coordY + hdl.coordX) = unpix

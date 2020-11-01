@@ -3,7 +3,7 @@
 
 typedef enum COMMAND
 {
-    #include "commands.h"
+    #include "../commands.h"
 } COMMAND;
 
 #undef DEF_CMD

@@ -1,6 +1,6 @@
 #include "Assembler.h"
-
 #include "enum.h"
+
 
 const uint8_t AMOUNT_COMMANDS = 14;
 const uint8_t AMOUNT_REGISTERS = 4;
@@ -751,7 +751,7 @@ int defualtProcessing(BinaryCode* bcode, AsmLine* line, size_t* pos, uint8_t* fl
     
     if (*pos > line->amount_lexemes)
     {
-        printf("Error.Pos out of line\n->%s\n", line->lexemes[line->amount_lexemes-1]);
+        printf("Error.Pos out of line\n->%s\n", line->lexemes[line->amount_lexemes - 1]);
         return 1;
     }
     if (isNumber(line->lexemes[*pos]))
@@ -767,12 +767,12 @@ int argumentsProcessing(size_t arg, AsmLine* line, size_t* pos, BinaryCode* bcod
 {
     uint8_t flag = 0x00;
     uint64_t flag_adrress = bcode->offset;
-    pushFromOffset(bcode, &flag, sizeof(uint8_t));
 
     if (!isCtrlFlow(ctrl_flow))
     {
         for (size_t i = 0; i < arg; ++i)
         {
+            pushFromOffset(bcode, &flag, sizeof(uint8_t));
             if (isOpenBracket(line->lexemes[*pos]))
             {
                 printf("SET RAM CALL\n");
@@ -785,15 +785,17 @@ int argumentsProcessing(size_t arg, AsmLine* line, size_t* pos, BinaryCode* bcod
                 if (defualtProcessing(bcode, line, pos, &flag) != 0)
                     return 1;
             }
+            *pos += 1;
+            printf("SET FLAG: %d\n", flag);
+            insertTo(bcode, &flag, sizeof(uint8_t), flag_adrress);
+            flag = 0x00;
+            flag_adrress = bcode->offset;
         }
-        *pos += 1;
-        printf("SET FLAG: %d\n", flag);
-        insertTo(bcode, &flag, sizeof(uint8_t), flag_adrress);
-        flag = 0x00;
-        flag_adrress = bcode->offset;
+
     }
     else
     {
+        pushFromOffset(bcode, &flag, sizeof(uint8_t));
         printf("FIND CTRL_FLOW.\nSET FLAG: %d\n", flag); 
         if (ctrlFlowProcessing(bcode, labels, line, pos, alg_pass) != 0)
         {
@@ -815,7 +817,8 @@ int binaryTranslation(BinaryCode* bcode, AsmListing* asm_listing)
     size_t pos = 0;
 
     for (size_t alg_pass = 0; alg_pass < NUM_ALGORITHM_PASS; ++alg_pass)
-    {
+    {   
+        printf("new algorithm pass\n------\n");
         bcode->offset = 0;
         for (size_t i = 0; i < asm_listing->amount_lines; ++i)
         {
@@ -826,13 +829,12 @@ int binaryTranslation(BinaryCode* bcode, AsmListing* asm_listing)
             if (line->amount_lexemes < 1)
                 continue;
             
-            #include "commands.h"
+            #include "../commands.h"
             /*else*/
+                return argumentError(line, pos, i + 1);
+
             if (pos < line->amount_lexemes - 1)
                 return tooManyArgumentsError(line, pos, i + 1);
-
-            else
-                return argumentError(line, pos, i + 1);
         }
     }
     

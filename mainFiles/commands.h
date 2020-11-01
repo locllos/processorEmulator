@@ -49,18 +49,14 @@ DEF_CMD(CALL, 22, 1, 1)
 
 DEF_CMD(RET, 23, 0, 1)
 
-/*
 DEF_CMD(PIX, 24, 1, 0)
 
 DEF_CMD(UNPIX, 25, 0, 0)
 
-DEF_CMD(SHOW, 26, 0, 0)
+DEF_CMD(INSCR, 26, 0, 0)
 
-DEF_CMD(UNSHOW, 27, 0, 0)
-*/
+DEF_CMD(CLSCR, 27, 0, 0)
 
-/*
-size_t find_max_lexems_num(){
-    
-}
-*/
+DEF_CMD(UNSCR, 28, 0, 0)
+
+

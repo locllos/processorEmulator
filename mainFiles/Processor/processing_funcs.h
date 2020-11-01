@@ -299,17 +299,15 @@
 }
 
 
-/*
+
 #define PIX_FUNC                                       \
 {                                                       \
     PC_INCR_1;                                          \
     TAKE_COORD(hdl.coordY);                                 \
     TAKE_COORD(hdl.coordX);                                 \
+    PC_INCR_1;                                          \
     MARK;                                               \
-    printf("TRUE SYMBOL:%c|", (char)(*((elem_t*)(cpu->bcode + cpu->pc))));\
-    printf("MARKED:%c|\n", cpu->RAM[RAM + sizeY * hdl.coordY + hdl.coordX]);\
     PC_INCR_8;                                          \
-    printf("i am here\n");\
 }
 
 #define UNPIX_FUNC                                      \
@@ -320,7 +318,8 @@
     UNMARK;                                             \
 }
 
-#define SHOW_FUNC { PC_INCR_1; hdl.gpu_mod = 1; }
+#define INSCR_FUNC { PC_INCR_1; cpu->gpu_mod = 1; }
 
-#define UNSHOW_FUNC { PC_INCR_1; hdl.gpu_mod = 0; }        
-*/
+#define CLSCR_FUNC { PC_INCR_1; clearScreen(cpu); }
+
+#define UNSCR_FUNC { PC_INCR_1; cpu->gpu_mod = 0; }        

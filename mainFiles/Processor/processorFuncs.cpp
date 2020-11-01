@@ -3,9 +3,10 @@
 const uint8_t AMOUNT_REGISTERS = 4;
 const uint8_t BASE_CAPACITY = 10;
 const size_t RAM_SIZE = 1024;
-const size_t sizeX = 120;
+const size_t sizeX = 90;
 const size_t sizeY = 30;
 const size_t GRAM_SIZE = sizeX * sizeY;
+const char unpix = ' ';
 
 
 const char* REGISTERS[AMOUNT_REGISTERS] = 
@@ -233,7 +234,7 @@ void cpuDamp(CPU* cpu)
 void screenGPU(CPU* cpu)
 {
     char* GRAM = (char*)(cpu->RAM + RAM_SIZE);
-
+    system("cls");
     for (uint64_t i = 0; i < sizeX + 2; ++i)
     {
         printf("#");
@@ -244,15 +245,26 @@ void screenGPU(CPU* cpu)
         printf("#");
         for (uint64_t x = 0; x < sizeX; ++x)
         {
-            printf("%c", GRAM[y * sizeY + x]);
+            printf("%c", GRAM[sizeX * y + x]);
         }
-        printf("#\n");
+        printf("#");
+        // printf("y = %llu", y);
+        printf("\n");
     }
     for (uint64_t i = 0; i < sizeX + 2; ++i)
     {
         printf("#");
     }
     printf("\n");
+}
+
+void clearScreen(CPU* cpu)
+{
+    char* GRAM = (char*)(cpu->RAM + RAM_SIZE);
+    for (uint64_t i = 0; i < GRAM_SIZE; ++i)
+    {
+        GRAM[i] = unpix;
+    }
 }
 
 void loadBytecode(CPU* cpu, const char* filename)
@@ -303,12 +315,12 @@ void loadRAM(CPU* cpu)
     {
         cpu->RAM[i] = NAN; 
     }
+}
 
-    char* GRAM = (char*)(cpu->RAM + RAM_SIZE);
-    for (uint64_t i = 0; i < GRAM_SIZE; ++i)
-    {
-        GRAM[i] = ' ';//to const
-    }
+void loadGRAM(CPU* cpu)
+{
+    clearScreen(cpu);
+    cpu->gpu_mod = 0;
 }
 
 
@@ -325,7 +337,6 @@ void constructHandler(Handler* hdl)
     hdl->value_b = 0;
     hdl->result = 0;
     hdl->flag = 0;
-    hdl->gpu_mod = 0;
     hdl->ram_address = 0;
     hdl->coordX = 0;
     hdl->coordY = 0;
@@ -345,6 +356,7 @@ void loadCPU(CPU* cpu, const char* filename)
     loadBytecode(cpu, filename);
     loadStacks(cpu);
     loadRAM(cpu);
+    loadGRAM(cpu);
     loadRegisters(cpu);
 }
 
@@ -381,16 +393,16 @@ void Execution(CPU* cpu)
     while (isNotEndOfFile(cpu))
     {    
         cpuDamp(cpu);
+        if (cpu->gpu_mod == 1) screenGPU(cpu);
         switch(cpu->bcode[cpu->pc])
         {
-            #include "commands.h"
+            #include "../commands.h"
 
             default:
                 printf("UNKNOWN COMMAND!\n");
                 break;
             
         }
-        // screenGPU(cpu);
         resetHandler(&hdl);
     }
 }

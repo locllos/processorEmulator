@@ -15,6 +15,7 @@ typedef struct CPU
     uint64_t length;
 
     uint64_t pc;
+    uint8_t gpu_mod;
     
     elem_t registers[4];
 
@@ -28,7 +29,6 @@ typedef struct Handler
     elem_t result;
 
     uint8_t flag;
-    uint8_t gpu_mod;
     
     uint64_t ram_address;
     uint64_t coordX;
@@ -68,6 +68,8 @@ void loadRegisters(CPU* cpu);
 void loadStacks(CPU* cpu);
 
 void loadRAM(CPU* cpu);
+
+void loadGRAM(CPU* cpu);
 
 void constructHandler(Handler* hdl);
 

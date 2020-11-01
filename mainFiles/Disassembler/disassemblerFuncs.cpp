@@ -163,7 +163,7 @@ void binaryCodeProcessing(const char* binary_filename, const char* filename)
         flag = NUMBER;
 
 
-        #include "commands.h"
+        #include "../commands.h"
 
         /*else*/
         {
