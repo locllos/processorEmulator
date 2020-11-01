@@ -1,5 +1,6 @@
  #include "fast_func.h"
  
+ 
  #define IN_FUNC                                        \
     {                                                   \
     SCAN_VALUE;                                         \
@@ -47,8 +48,8 @@
 
 #define ADD_FUNC                                        \
 {                                                       \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     ADD_VALUES;                                         \
     PUSH_RESULT;                                        \
     PC_INCR_1;                                          \
@@ -58,8 +59,8 @@
 #define SUB_FUNC                                        \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
                                                         \
     SUB_VALUES;                                         \
                                                         \
@@ -70,8 +71,8 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
                                                         \
     MUL_VALUES;                                         \
                                                         \
@@ -82,8 +83,8 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
                                                         \
     DIV_VALUES;                                         \
                                                         \
@@ -94,8 +95,8 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
                                                         \
     POW_VALUES;                                         \
                                                         \
@@ -106,7 +107,7 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value);                                \
+    POP_TO_VALUE(hdl.value);                                \
                                                         \
     SQRT_VALUE;                                         \
                                                         \
@@ -117,7 +118,7 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value);                                \
+    POP_TO_VALUE(hdl.value);                                \
                                                         \
     SIN_VALUE;                                          \
                                                         \
@@ -128,7 +129,7 @@
 {                                                       \
     PC_INCR_1;                                          \
                                                         \
-    POP_TO_VALUE(value);                                \
+    POP_TO_VALUE(hdl.value);                                \
                                                         \
     COS_VALUE;                                          \
                                                         \
@@ -151,10 +152,10 @@
 #define JB_FUNC                                         \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a > value_b)                              \
+    if (hdl.value_a > hdl.value_b)                              \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -167,10 +168,10 @@
 #define JBE_FUNC                                        \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a >= value_b)                              \
+    if (hdl.value_a >= hdl.value_b)                              \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -183,10 +184,10 @@
 #define JE_FUNC                                         \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a == value_b)                              \
+    if (hdl.value_a == hdl.value_b)                              \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -199,10 +200,10 @@
 #define JNE_FUNC                                        \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a != value_b)                              \
+    if (hdl.value_a != hdl.value_b)                              \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -215,10 +216,10 @@
 #define JA_FUNC                                         \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a < value_b)                              \
+    if (hdl.value_a < hdl.value_b)                              \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -231,10 +232,10 @@
 #define JAE_FUNC                                        \
 {                                                       \
     PC_INCR_1;                                          \
-    POP_TO_VALUE(value_a);                              \
-    POP_TO_VALUE(value_b);                              \
+    POP_TO_VALUE(hdl.value_a);                              \
+    POP_TO_VALUE(hdl.value_b);                              \
     PC_INCR_1;                                          \
-    if (value_a <= value_b)                             \
+    if (hdl.value_a <= hdl.value_b)                             \
     {                                                   \
         TAKE_ADDRESS_FROM_FLOW;                         \
     }                                                   \
@@ -294,5 +295,32 @@
 
 #define RET_FUNC                                        \
 {                                                       \
-    TAKE_ADDRESS_FROM_CALLSTACK;                            \
+    TAKE_ADDRESS_FROM_CALLSTACK;                        \
 }
+
+
+/*
+#define PIX_FUNC                                       \
+{                                                       \
+    PC_INCR_1;                                          \
+    TAKE_COORD(hdl.coordY);                                 \
+    TAKE_COORD(hdl.coordX);                                 \
+    MARK;                                               \
+    printf("TRUE SYMBOL:%c|", (char)(*((elem_t*)(cpu->bcode + cpu->pc))));\
+    printf("MARKED:%c|\n", cpu->RAM[RAM + sizeY * hdl.coordY + hdl.coordX]);\
+    PC_INCR_8;                                          \
+    printf("i am here\n");\
+}
+
+#define UNPIX_FUNC                                      \
+{                                                       \
+    PC_INCR_1;                                          \
+    TAKE_COORD(hdl.coordY);                                 \
+    TAKE_COORD(hdl.coordX);                                 \
+    UNMARK;                                             \
+}
+
+#define SHOW_FUNC { PC_INCR_1; hdl.gpu_mod = 1; }
+
+#define UNSHOW_FUNC { PC_INCR_1; hdl.gpu_mod = 0; }        
+*/

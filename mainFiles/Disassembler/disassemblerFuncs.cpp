@@ -1,4 +1,13 @@
-#include "headers/cpu.h"
+#include "Disassembler.h"
+#include "enum.h"
+
+const char* REGISTERS[4] = 
+{   
+    "rax",
+    "rbx",
+    "rcx",
+    "rdx"
+};
 
 uint64_t approxLength(const char* filename)
 {
@@ -69,9 +78,8 @@ void writeTextCommand(BinaryCode* bcode, FILE* file, const char* name)
         bcode->offset += sizeof(uint8_t);   
 }
 
-BinaryCode* openBinaryCode(const char* filename)
+BinaryCode* openBinaryCode(BinaryCode* binary_code, const char* filename)
 {
-    BinaryCode* binary_code = (BinaryCode*)calloc(1, sizeof(BinaryCode));
     binary_code->length = approxLength(filename);
     FILE* file = fopen(filename, "rb");
 
@@ -124,20 +132,21 @@ void writeOneArgument(BinaryCode* bcode, FILE* file)
 }
 
 #define DEF_CMD(name, num, arg, ctrl_flow)                  \
-    if (isCommand(bcode, num))                              \
+    if (isCommand(&bcode, num))                              \
     {                                                       \
-        writeTextCommand(bcode, file, #name);               \
+        writeTextCommand(&bcode, file, #name);               \
         fprintf(file, " ");                                 \
         if (arg == 1)                                       \
         {                                                   \
-            writeOneArgument(bcode, file);                  \
+            writeOneArgument(&bcode, file);                  \
         }                                                   \
         fprintf(file, "\n");                                \
     } else                                                  
 
 void binaryCodeProcessing(const char* binary_filename, const char* filename)
 {
-    BinaryCode* bcode = openBinaryCode(binary_filename);
+    BinaryCode bcode = {};
+    openBinaryCode(&bcode, binary_filename);
 
     FILE* file = fopen(filename, "w");
 
@@ -146,7 +155,7 @@ void binaryCodeProcessing(const char* binary_filename, const char* filename)
     uint8_t* num_address = NULL;
     FLAG flag = NUMBER;
 
-    while (bcode->offset < bcode->length)
+    while (bcode.offset < bcode.length)
     {
         value = 0;
         reg_index  = 0;
@@ -159,51 +168,14 @@ void binaryCodeProcessing(const char* binary_filename, const char* filename)
         /*else*/
         {
             printf("ERROR COMMAND DOESNT FIND!\n");
-            printf("COMMAND CODE: %d\n", bcode->code[bcode->offset]);
-            printf("OFFSET: %llu\n", bcode->offset);
-            printf("length file: %llu\n", bcode->length);
+            printf("COMMAND CODE: %d\n", bcode.code[bcode.offset]);
+            printf("OFFSET: %llu\n", bcode.offset);
+            printf("length file: %llu\n", bcode.length);
             break;
         }
 
     }
+    fclose(file);
 }
 
 #undef DEF_CMD
-
-int main(int argC, const char* argV[])
-{
-    
-    char* filename = (char*)calloc(32, sizeof(char));
-    char* binary_filename = (char*)calloc(32, sizeof(char));
-
-    const char* default_filename = "your_code.txt";
-    const char* default_bin_filename = "bc.bin";
-
-    printf("ARG C: %d\n", argC);
-    for (int i = 0; i < argC; ++i)
-    {
-        printf("ARG V[%i] = %s\n", i, argV[i]);
-    }
-
-    if (argC == 1)
-    {
-        binaryCodeProcessing(default_bin_filename, default_filename);
-    }
-    else if (argC == 2)
-    {   
-        binaryCodeProcessing(argV[1], default_filename);
-
-    }
-    else if (argC == 4 && strcmp(argV[2], "~") == 0)
-    {
-        binaryCodeProcessing(argV[1], argV[3]);
-    }
-    else
-    {
-        printf("UNKNOWN COMMANDS!\n");
-
-        return 1;
-    }
-
-    return 0;
-}

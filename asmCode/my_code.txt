@@ -1,0 +1,14 @@
+IN
+PUSH 10
+POP rax
+
+PUSH 3
+POP [rax + 2]
+
+PUSH [12]
+OUT 
+
+PUSH rax + 7
+OUT
+
+HLT 

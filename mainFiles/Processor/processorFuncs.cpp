@@ -1,5 +1,36 @@
-#include "headers/processing_funcs.h"
-#include "headers/cpu.h"
+#include "Processor.h"
+
+const uint8_t AMOUNT_REGISTERS = 4;
+const uint8_t BASE_CAPACITY = 10;
+const size_t RAM_SIZE = 1024;
+const size_t sizeX = 120;
+const size_t sizeY = 30;
+const size_t GRAM_SIZE = sizeX * sizeY;
+
+
+const char* REGISTERS[AMOUNT_REGISTERS] = 
+{   
+    "rax",
+    "rbx",
+    "rcx",
+    "rdx"
+};
+
+typedef enum FLAGS
+{
+    NUM = 0x01,
+    REG = 0x02,
+    RAM = 0x04,
+} FLAGS;
+
+#include "enum.h"
+
+typedef enum FLAG
+{
+    NUMBER = 0,
+    REGISTER = 1
+
+} FLAG;
 
 elem_t Pow(const elem_t value_a, const elem_t value_b)
 {
@@ -54,7 +85,7 @@ void prepareBcodeDamp(FILE* file, uint64_t power)
     }
 }
 
-void pcAtFirstLine(BinaryCode* bcode, FILE* file, uint64_t pc, uint64_t length)
+void pcAtFirstLine(uint8_t* bcode, FILE* file, uint64_t pc, uint64_t length)
 {
     fprintf(file, "\n");
     fprintf(file, "%X: ", 16);
@@ -87,8 +118,10 @@ void pcAtLastLine(FILE* file, uint64_t pc, uint64_t length, uint64_t power, uint
     fprintf(file, "^");
 }
 
-void bcodeDamp(BinaryCode* bcode, uint64_t pc, uint64_t length, FILE* file)
+void bcodeDamp(uint8_t* bcode, uint64_t pc, uint64_t length)
 {
+    FILE* file = fopen("logs.txt", "a");
+
     fprintf(file, "\n================================================\n");
     fprintf(file, "DAMP OF CPU:\n");
 
@@ -140,20 +173,27 @@ void bcodeDamp(BinaryCode* bcode, uint64_t pc, uint64_t length, FILE* file)
         pcAtLastLine(file, pc, length, power, power_i);
     }  
     fprintf(file, "\npc = %llu\n", pc);    
+
+    fclose(file);
 }
 
-void registerDamp(elem_t* registers, FILE* file)
+void registerDamp(elem_t* registers)
 {
-    fprintf(file, "\n");
+    FILE* file = fopen("logs.txt", "a");
 
+    fprintf(file, "\n");
     fprintf(file, "rax = %lg\n", registers[0]);
     fprintf(file, "rbx = %lg\n", registers[1]);
     fprintf(file, "rcx = %lg\n", registers[2]);
     fprintf(file, "rdx = %lg\n", registers[3]);
+
+    fclose(file);
 }
 
-void ramDump(CPU* cpu, FILE* file)
-{
+void ramDump(CPU* cpu)
+{   
+    FILE* file = fopen("logs.txt", "a");
+
     fprintf(file, "\nRAM DAMP\n=============================\n");
     size_t count_relevant = 0;
     for (size_t i = 0; i < RAM_SIZE; ++i)
@@ -164,22 +204,55 @@ void ramDump(CPU* cpu, FILE* file)
         }
         if (!isnan(cpu->RAM[i]))
         {
-            fprintf(file, "%lg ", cpu->RAM[i]);
+            fprintf(file, "[%zu] = %lg |", i, cpu->RAM[i]);
             ++count_relevant;
         }
     }
+    if (count_relevant == 0)
+        fprintf(file, "[empty]");
     fprintf(file, "\n=============================\n");
+
+    fclose(file);
 }
 
 void cpuDamp(CPU* cpu)
 {    
     FILE* file = fopen("logs.txt", "a");
-    bcodeDamp(cpu->bcode, cpu->pc, cpu->length, file);
-    registerDamp(cpu->registers, file);
+
+    bcodeDamp(cpu->bcode, cpu->pc, cpu->length);
+    registerDamp(cpu->registers);
     stackDump_simple(cpu->stack, stackOk_simple(cpu->stack), __LINE__);
     stackDump_simple(cpu->call_stack, stackOk_simple(cpu->call_stack), __LINE__);
-    ramDump(cpu, file);
+    ramDump(cpu);
+    fprintf(file, "######################################\n");
+
     fclose(file);
+
+}
+
+void screenGPU(CPU* cpu)
+{
+    char* GRAM = (char*)(cpu->RAM + RAM_SIZE);
+
+    for (uint64_t i = 0; i < sizeX + 2; ++i)
+    {
+        printf("#");
+    }
+    printf("\n");
+    for (uint64_t y = 0; y < sizeY; ++y)
+    {   
+        printf("#");
+        for (uint64_t x = 0; x < sizeX; ++x)
+        {
+            printf("%c", GRAM[y * sizeY + x]);
+        }
+        printf("#\n");
+    }
+    for (uint64_t i = 0; i < sizeX + 2; ++i)
+    {
+        printf("#");
+    }
+    printf("\n");
 }
 
 void loadBytecode(CPU* cpu, const char* filename)
@@ -225,33 +298,89 @@ void loadStacks(CPU* cpu)
 
 void loadRAM(CPU* cpu)
 {
-    cpu->RAM = (elem_t*)calloc(RAM_SIZE * sizeof(elem_t) + GRAM_SIZE * sizeof(uint8_t), 1);
+    cpu->RAM = (elem_t*)calloc(RAM_SIZE * sizeof(elem_t) + GRAM_SIZE * sizeof(char), 1);
     for (uint64_t i = 0; i < RAM_SIZE; ++i)
     {
         cpu->RAM[i] = NAN; 
     }
 
+    char* GRAM = (char*)(cpu->RAM + RAM_SIZE);
+    for (uint64_t i = 0; i < GRAM_SIZE; ++i)
+    {
+        GRAM[i] = ' ';//to const
+    }
 }
+
 
 #define DEF_CMD(name, num, arg, ctrl_flow)  \
     case name##_COMMAND:                    \
         name##_FUNC                         \
+        /*printf("CMD: %s\n", #name);*/     \
         break;   
 
-
-
-void Proccesor(CPU* cpu)
+void constructHandler(Handler* hdl)
 {
-    cpuDamp(cpu);
-    while (cpu->bcode[cpu->pc] != HLT_COMMAND && cpu->pc < cpu->length && cpu->bcode[cpu->pc] != EOF)
-    {    
-        elem_t value = 0;
-        elem_t value_a = 0;
-        elem_t value_b = 0;
-        elem_t result = 0;
-        uint8_t flag = 0;
-        uint64_t ram_address = 0;
+    hdl->value = 0;
+    hdl->value_a = 0;
+    hdl->value_b = 0;
+    hdl->result = 0;
+    hdl->flag = 0;
+    hdl->gpu_mod = 0;
+    hdl->ram_address = 0;
+    hdl->coordX = 0;
+    hdl->coordY = 0;
+}
 
+Handler* newHandler()
+{   
+    Handler* hdl = (Handler*)calloc(1, sizeof(Handler));
+
+    constructHandler(hdl);
+
+    return hdl;
+}
+
+void loadCPU(CPU* cpu, const char* filename)
+{
+    loadBytecode(cpu, filename);
+    loadStacks(cpu);
+    loadRAM(cpu);
+    loadRegisters(cpu);
+}
+
+void destructCPU(CPU* cpu)
+{
+    deleteStack_simple(cpu->stack);
+    deleteStack_simple(cpu->call_stack);
+    free(cpu->bcode);
+    free(cpu);
+}
+
+void resetHandler(Handler* hdl)
+{
+    hdl->value = 0;
+    hdl->value_a = 0;
+    hdl->value_b = 0;
+    hdl->result = 0;
+    hdl->flag = 0;
+    /*hdl->gpu_mod = 0;*/
+    hdl->ram_address = 0;
+    hdl->coordX = 0;
+    hdl->coordY = 0;
+}
+
+int isNotEndOfFile(CPU* cpu)
+{
+    return (cpu->bcode[cpu->pc] != HLT_COMMAND && cpu->pc < cpu->length && cpu->bcode[cpu->pc] != EOF);
+}
+
+void Execution(CPU* cpu)
+{
+    Handler hdl = {};
+    constructHandler(&hdl);
+    while (isNotEndOfFile(cpu))
+    {    
+        cpuDamp(cpu);
         switch(cpu->bcode[cpu->pc])
         {
             #include "commands.h"
@@ -261,61 +390,22 @@ void Proccesor(CPU* cpu)
                 break;
             
         }
-        if (cpu->bcode[cpu->pc] != OUT_COMMAND)
-        {
-            cpuDamp(cpu);
-        }
-        ram_address = 0;
+        // screenGPU(cpu);
+        resetHandler(&hdl);
     }
-
-    deleteStack_simple(cpu->stack);
-    free(cpu->bcode);
-    free(cpu);
 }
 
 #undef DEF_CMD
 
 void Executing(const char* filename)
 {   
-    CPU* cpu = (CPU*)calloc(1, sizeof(CPU));
+    CPU cpu = {};
+    loadCPU(&cpu, filename);
+    
+    Execution(&cpu);
 
-    loadBytecode(cpu, filename);
-    loadStacks(cpu);
-    loadRAM(cpu);
-
-    loadRegisters(cpu);
-
-
-    Proccesor(cpu);
+    destructCPU(&cpu);
 }
 
-int main(int argC, const char* argV[])
-{
-    char* filename = (char*)calloc(32, sizeof(char));
-    strcpy(filename, "bc.bin");
 
-    printf("argC = %d\n", argC);
-    for (int i = 0; i < argC; ++i)
-    {
-        printf("%s\n", argV[i]);
-    }
-    printf("\n");
 
-    if (argC == 1)
-    {
-        Executing(filename);
-    }
-    if (argC == 2)
-    {
-        strcpy(filename, argV[1]);
-        Executing(filename);
-        return 0;
-
-    }
-    else if (argC > 2)
-    {
-        printf("COMMAND NOT FOUND!\n");
-        return 2;
-    }
-
-}

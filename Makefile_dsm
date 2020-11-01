@@ -1,0 +1,8 @@
+disassembler.exe: objectsFiles/disassemblerMain.o objectsFiles/disassemblerFuncs.o
+	g++ objectsFiles/disassemblerMain.o objectsFiles/disassemblerFuncs.o -o disassembler
+
+objectsFiles/disassemblerMain.o: mainFiles\Disassembler\disassemblerMain.cpp
+	g++ -c mainFiles\Disassembler\disassemblerMain.cpp -o objectsFiles/disassemblerMain.o
+
+objectsFiles/disassemblerFuncs.o: mainFiles\Disassembler\disassemblerFuncs.cpp
+	g++ -c mainFiles\Disassembler\disassemblerFuncs.cpp -o objectsFiles/disassemblerFuncs.o
